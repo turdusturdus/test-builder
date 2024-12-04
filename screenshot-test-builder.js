@@ -2,53 +2,20 @@ import { test as t, expect } from "@playwright/test";
 
 const DEFAULT_API_URL = "https://widgets.api.pl/test/api/equities/widgets";
 
-/**
- * @typedef {Object} ViewPortResolution
- * @property {number} width
- * @property {number} height
- */
-
 class Builder {
-  /** @type {string|null} */
   #widgetId = null;
-
-  /** @type {string[]} */
   #clients = ["default_client"];
-
-  /** @type {('desktop' | 'mobile')[]} */
   #viewport = ["desktop", "mobile"];
-
-  /** @type {('default' | 'dark')[]} */
   #colorSchemes = ["default"];
-
-  /** @type {string|null} */
   #componentName = null;
-
-  /** @type {Object|null} */
   #widgetProps = null;
-
-  /** @type {Array<Object>} */
   #apiMocks = [];
-
-  /** @type {function|null} */
   #pageInteraction = null;
-
-  /** @type {boolean} */
   #onlyThis = false;
-
-  /** @type {Array<"canvas" | "timeout">} */
   #waitFor = [];
-
-  /** @type {string} */
   #widgetState = "default";
-
-  /** @type {string|null} */
   #elementTestId = null;
-
-  /** @type {string|null} */
   #title = null;
-
-  /** @type {Object<string, ViewPortResolution>} */
   #viewPortResolution = {
     desktop: {
       width: 1396,
@@ -60,75 +27,43 @@ class Builder {
     },
   };
 
-  /**
-   * @param {string} widgetId
-   * @returns {this}
-   */
   forWidget(widgetId) {
     this.#widgetId = widgetId;
     this.#elementTestId = null;
     return this;
   }
 
-  /**
-   * @param {string} componentName
-   * @param {string} widgetId
-   * @returns {this}
-   */
   forComponent(componentName, widgetId) {
     this.#componentName = componentName;
     this.#widgetId = widgetId;
     return this;
   }
 
-  /**
-   * @param {string} elementTestId
-   * @returns {this}
-   */
   forElement(elementTestId) {
     this.#elementTestId = elementTestId;
     return this;
   }
 
-  /**
-   * @returns {this}
-   */
   only() {
     this.#onlyThis = true;
     return this;
   }
 
-  /**
-   * @param {string[]} clients
-   * @returns {this}
-   */
   forClients(clients) {
     this.#clients = clients;
     return this;
   }
 
-  /**
-   * @param {('desktop' | 'mobile')[]} viewport
-   * @returns {this}
-   */
   forViewports(viewport) {
     this.#viewport = viewport;
     return this;
   }
 
-  /**
-   * @param {('default' | 'dark')[]} colorSchemes
-   * @returns {this}
-   */
   forColorSchemes(colorSchemes) {
     this.#colorSchemes = colorSchemes;
     return this;
   }
 
-  /**
-   * @param {Object|function(Object):Object} newPropsOrCallback
-   * @returns {this}
-   */
   withWidgetProps(newPropsOrCallback) {
     if (typeof newPropsOrCallback === "function") {
       this.#widgetProps = newPropsOrCallback(this.#widgetProps);
@@ -138,12 +73,6 @@ class Builder {
     return this;
   }
 
-  /**
-   * @param {string} affix
-   * @param {Object|string} data
-   * @param {string} contentType
-   * @returns {this}
-   */
   withRouteMock(affix, data, contentType) {
     this.#apiMocks = this.#apiMocks.filter((mock) => mock.endpoint !== affix);
 
@@ -158,49 +87,26 @@ class Builder {
     return this;
   }
 
-  /**
-   * @param {Array<"canvas" | "timeout">} waitFor
-   * @returns {this}
-   */
   withWaitFor(waitFor) {
     this.#waitFor = waitFor;
     return this;
   }
 
-  /**
-   * @param {function(import('playwright').Page):Promise<void>} [pageInteraction]
-   * @returns {this}
-   */
   setPageInteraction(pageInteraction) {
     this.#pageInteraction = pageInteraction;
     return this;
   }
 
-  /**
-   * Sets the widget state for the test.
-   * @param {('no-data' | 'loading' | 'no-response' | 'default')} widgetState
-   * @returns {this}
-   */
   setWidgetState(widgetState) {
     this.#widgetState = widgetState;
     return this;
   }
 
-  /**
-   * Sets title prefix for the test.
-   * @param {string} title
-   * @returns {this}
-   */
   withTitle(title) {
     this.#title = title;
     return this;
   }
 
-  /**
-   * Runs the test with the given variant name.
-   * @param {string} [variantName]
-   * @returns {this}
-   */
   test(variantName) {
     if (!this.#widgetId) throw new Error("Widget ID is not set");
     const playwrightTest = this.#onlyThis ? t.only : t;
@@ -267,17 +173,6 @@ class Builder {
     return this;
   }
 
-  /**
-   * @private
-   * @param {string} client
-   * @param {string} viewPort
-   * @param {string} colorScheme
-   * @param {string} widgetState
-   * @param {string} [variantName]
-   * @param {string|null} elementTestId
-   * @param {string|null} title
-   * @returns {string}
-   */
   #getTestDescriptionFor(
     client,
     viewPort,
@@ -301,11 +196,6 @@ class Builder {
       .join("");
   }
 
-  /**
-   * @private
-   * @param {import('playwright').Page} page
-   * @returns {Promise<void>}
-   */
   async #mockCurrentDate(page) {
     const mockDate = new Date(Date.UTC(2023, 7, 4)).valueOf();
     await page.addInitScript(`{
@@ -324,12 +214,6 @@ class Builder {
             }`);
   }
 
-  /**
-   * @private
-   * @param {import('playwright').Page} page
-   * @param {string} widgetState
-   * @returns {Promise<void>}
-   */
   async #mockApiCall(page, widgetState) {
     if (widgetState === "no-response") return;
 
@@ -368,24 +252,10 @@ class Builder {
     }
   }
 
-  /**
-   * @private
-   * @param {string} viewPort
-   * @param {import('playwright').Page} page
-   * @returns {Promise<void>}
-   */
   async #setViewportFor(viewPort, page) {
     await page.setViewportSize(this.#viewPortResolution[viewPort]);
   }
 
-  /**
-   * @private
-   * @param {string} client
-   * @param {import('playwright').Page} page
-   * @param {Object|null} widgetProps
-   * @param {string} colorScheme
-   * @returns {Promise<void>}
-   */
   async #addWidgetToPage(client, page, widgetProps, colorScheme) {
     await page.addInitScript({
       content: `
@@ -400,13 +270,6 @@ class Builder {
     });
   }
 
-  /**
-   * @private
-   * @param {import('playwright').Page} page
-   * @param {string} colorScheme
-   * @param {Array<"canvas" | "timeout">} waitFor
-   * @returns {Promise<void>}
-   */
   async #loadPage(page, colorScheme, waitFor) {
     await page.goto("./");
     if (colorScheme === "dark") {
@@ -428,12 +291,6 @@ class Builder {
     }
   }
 
-  /**
-   * @private
-   * @param {import('playwright').Page} page
-   * @param {string|null} elementTestId
-   * @returns {Promise<Buffer>}
-   */
   async #takeWidgetScreenshot(page, elementTestId) {
     const element = await page
       .locator(
@@ -463,11 +320,6 @@ class Builder {
     }
   }
 
-  /**
-   * @private
-   * @param {Array<string|boolean>} parts
-   * @returns {Array<string>}
-   */
   #getReferenceFileFor(parts) {
     return [
       this.#componentName || this.#widgetId,
@@ -477,10 +329,6 @@ class Builder {
     ];
   }
 
-  /**
-   * Resets the state of the builder.
-   * @private
-   */
   #resetState() {
     this.#widgetState = "default";
   }
