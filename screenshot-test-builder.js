@@ -3,17 +3,16 @@ import { test as t, expect } from "@playwright/test";
 const DEFAULT_API_URL = "https://widgets.api.pl/test/api/equities/widgets";
 
 class Builder {
-  #widgetId = null;
-  #clients = ["default_client"];
+  #pageRoute = null;
+  #viewName = null;
   #viewport = ["desktop", "mobile"];
   #colorSchemes = ["default"];
-  #componentName = null;
-  #widgetProps = null;
+  #pageQuery = null;
   #apiMocks = [];
   #pageInteraction = null;
   #onlyThis = false;
   #waitFor = [];
-  #widgetState = "default";
+  #pageState = "default";
   #elementTestId = null;
   #title = null;
   #viewPortResolution = {
@@ -27,15 +26,10 @@ class Builder {
     },
   };
 
-  forWidget(widgetId) {
-    this.#widgetId = widgetId;
+  forPage(pageRoute) {
+    this.#pageRoute = pageRoute;
+    this.#viewName = pageRoute.replace(/\//g, "-");
     this.#elementTestId = null;
-    return this;
-  }
-
-  forComponent(componentName, widgetId) {
-    this.#componentName = componentName;
-    this.#widgetId = widgetId;
     return this;
   }
 
@@ -49,11 +43,6 @@ class Builder {
     return this;
   }
 
-  forClients(clients) {
-    this.#clients = clients;
-    return this;
-  }
-
   forViewports(viewport) {
     this.#viewport = viewport;
     return this;
@@ -64,18 +53,17 @@ class Builder {
     return this;
   }
 
-  withWidgetProps(newPropsOrCallback) {
-    if (typeof newPropsOrCallback === "function") {
-      this.#widgetProps = newPropsOrCallback(this.#widgetProps);
+  withPageQuery(newQueryOrCallback) {
+    if (typeof newQueryOrCallback === "function") {
+      this.#pageQuery = newQueryOrCallback(this.#pageQuery);
     } else {
-      this.#widgetProps = newPropsOrCallback;
+      this.#pageQuery = newQueryOrCallback;
     }
     return this;
   }
 
   withRouteMock(affix, data, contentType) {
     this.#apiMocks = this.#apiMocks.filter((mock) => mock.endpoint !== affix);
-
     this.#apiMocks = [
       ...this.#apiMocks,
       {
@@ -97,8 +85,8 @@ class Builder {
     return this;
   }
 
-  setWidgetState(widgetState) {
-    this.#widgetState = widgetState;
+  setPageState(pageState) {
+    this.#pageState = pageState;
     return this;
   }
 
@@ -108,64 +96,54 @@ class Builder {
   }
 
   test(variantName) {
-    if (!this.#widgetId) throw new Error("Widget ID is not set");
+    if (!this.#pageRoute) throw new Error("Page route is not set");
     const playwrightTest = this.#onlyThis ? t.only : t;
 
     const testState = {
-      widgetProps: this.#widgetProps,
+      pageQuery: this.#pageQuery,
       pageInteraction: this.#pageInteraction,
-      widgetState: this.#widgetState,
+      pageState: this.#pageState,
       elementTestId: this.#elementTestId,
       waitFor: this.#waitFor,
     };
 
-    for (const client of this.#clients) {
-      for (const viewPort of this.#viewport) {
-        for (const colorScheme of this.#colorSchemes) {
-          playwrightTest(
-            this.#getTestDescriptionFor(
-              client,
-              viewPort,
-              colorScheme,
-              testState.widgetState,
-              variantName,
-              testState.elementTestId,
-              this.#title
-            ),
-            async ({ page }) => {
-              await this.#mockCurrentDate(page);
+    for (const viewPort of this.#viewport) {
+      for (const colorScheme of this.#colorSchemes) {
+        playwrightTest(
+          this.#getTestDescriptionFor(
+            viewPort,
+            colorScheme,
+            testState.pageState,
+            variantName,
+            testState.elementTestId,
+            this.#title
+          ),
+          async ({ page }) => {
+            await this.#mockCurrentDate(page);
 
-              await this.#mockApiCall(page, testState.widgetState);
+            await this.#mockApiCall(page, testState.pageState);
 
-              await this.#setViewportFor(viewPort, page);
+            await this.#setViewportFor(viewPort, page);
 
-              await this.#addWidgetToPage(
-                client,
-                page,
-                testState.widgetProps,
-                colorScheme
-              );
-              await this.#loadPage(page, colorScheme, testState.waitFor);
+            await this.#loadPage(page, colorScheme, testState);
 
-              if (testState.pageInteraction) {
-                await testState.pageInteraction(page);
-              }
-
-              expect(
-                await this.#takeWidgetScreenshot(page, testState.elementTestId)
-              ).toMatchSnapshot(
-                this.#getReferenceFileFor([
-                  client,
-                  viewPort,
-                  colorScheme !== "default" && colorScheme,
-                  testState.widgetState !== "default" && testState.widgetState,
-                  testState.elementTestId,
-                  variantName,
-                ])
-              );
+            if (testState.pageInteraction) {
+              await testState.pageInteraction(page);
             }
-          );
-        }
+
+            expect(
+              await this.#takePageScreenshot(page, testState.elementTestId)
+            ).toMatchSnapshot(
+              this.#getReferenceFileFor([
+                viewPort,
+                colorScheme !== "default" && colorScheme,
+                testState.pageState !== "default" && testState.pageState,
+                testState.elementTestId,
+                variantName,
+              ])
+            );
+          }
+        );
       }
     }
 
@@ -174,21 +152,19 @@ class Builder {
   }
 
   #getTestDescriptionFor(
-    client,
     viewPort,
     colorScheme,
-    widgetState,
+    pageState,
     variantName,
     elementTestId,
     title
   ) {
     return [
       `${title ? title : ""}`,
-      this.#componentName || this.#widgetId,
-      ` for client @${client}`,
-      ` in @${viewPort} viewPort`,
+      this.#viewName,
+      ` in @${viewPort} viewport`,
       colorScheme !== "default" && `, @${colorScheme} color scheme`,
-      widgetState !== "default" && `, @${widgetState} state`,
+      pageState !== "default" && `, @${pageState} state`,
       variantName && `, @${variantName} variant`,
       elementTestId && `, @${elementTestId} element`,
     ]
@@ -214,18 +190,22 @@ class Builder {
             }`);
   }
 
-  async #mockApiCall(page, widgetState) {
-    if (widgetState === "no-response") return;
+  async #mockApiCall(page, pageState) {
+    if (pageState === "no-response") return;
 
     let mockApi;
 
     try {
-      mockApi = await import(`../../mock-api/${this.#widgetId}.mock`);
+      mockApi = await import(`../../mock-api/${this.#viewName}.mock`);
     } catch (error) {
+      // If no mock file found, just skip
       return;
     }
 
     const { mockApiPresets } = mockApi;
+
+    // Use "noData" or "default" scenario from mock file
+    const scenario = pageState === "no-data" ? "noData" : "default";
 
     for (const {
       endpoint,
@@ -233,11 +213,11 @@ class Builder {
       contentType,
       customQuery = "",
       apiUrl,
-    } of mockApiPresets.e2e[widgetState === "no-data" ? "noData" : "default"]) {
+    } of mockApiPresets.e2e[scenario]) {
       await page.route(
         `${apiUrl || DEFAULT_API_URL}/${endpoint}${customQuery}*`,
         async (route) => {
-          if (widgetState === "loading") {
+          if (pageState === "loading") {
             return;
           } else if (contentType === "text/html") {
             await route.fulfill({
@@ -250,28 +230,36 @@ class Builder {
         }
       );
     }
+
+    // Additional mocks from `withRouteMock`
+    for (const { endpoint, mockData, contentType } of this.#apiMocks) {
+      await page.route(`${DEFAULT_API_URL}/${endpoint}*`, async (route) => {
+        if (contentType === "text/html") {
+          await route.fulfill({
+            contentType: "text/html",
+            body: mockData,
+          });
+        } else {
+          await route.fulfill({ json: mockData });
+        }
+      });
+    }
   }
 
   async #setViewportFor(viewPort, page) {
     await page.setViewportSize(this.#viewPortResolution[viewPort]);
   }
 
-  async #addWidgetToPage(client, page, widgetProps, colorScheme) {
-    await page.addInitScript({
-      content: `
-            window.widget = ${JSON.stringify({
-              "widget-id": this.#widgetId,
-              "no-animations": "1",
-              "dark-mode": colorScheme === "dark" ? "on" : "off",
-              ...widgetProps,
-            })}; 
-            window.CONFIG_CLIENT_ID = ${JSON.stringify(client)};
-          `,
-    });
+  #formatQueryParams(queryObj) {
+    if (!queryObj) return "";
+    const params = new URLSearchParams(queryObj);
+    return `?${params.toString()}`;
   }
 
-  async #loadPage(page, colorScheme, waitFor) {
-    await page.goto("./");
+  async #loadPage(page, colorScheme, testState) {
+    const queryString = this.#formatQueryParams(testState.pageQuery);
+    await page.goto(`./${this.#pageRoute}${queryString}`);
+
     if (colorScheme === "dark") {
       await page.addStyleTag({
         content: `
@@ -281,26 +269,22 @@ class Builder {
             `,
       });
     }
+
     await page.evaluate(() => document.fonts.ready);
     await page.waitForLoadState("load");
-    if (waitFor.includes("canvas")) {
+
+    if (testState.waitFor.includes("canvas")) {
       await page.waitForSelector("canvas");
     }
-    if (waitFor.includes("timeout")) {
+    if (testState.waitFor.includes("timeout")) {
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   }
 
-  async #takeWidgetScreenshot(page, elementTestId) {
-    const element = await page
-      .locator(
-        this.#componentName
-          ? `[data-component=${this.#componentName}]`
-          : elementTestId
-          ? `[data-testid=${elementTestId}]`
-          : `[widget-id=${this.#widgetId}]`
-      )
-      .first();
+  async #takePageScreenshot(page, elementTestId) {
+    const selector = elementTestId ? `[data-testid=${elementTestId}]` : "body";
+
+    const element = await page.locator(selector).first();
 
     if (elementTestId) {
       const boundingBox = await element.boundingBox();
@@ -313,7 +297,6 @@ class Builder {
           height: boundingBox.height + 2 * padding,
         },
       };
-
       return await page.screenshot(screenshotOptions);
     } else {
       return await element.screenshot();
@@ -322,18 +305,16 @@ class Builder {
 
   #getReferenceFileFor(parts) {
     return [
-      this.#componentName || this.#widgetId,
-      [this.#componentName || this.#widgetId, ...parts.filter(Boolean)].join(
-        "-"
-      ),
+      this.#viewName,
+      [this.#viewName, ...parts.filter(Boolean)].join("-"),
     ];
   }
 
   #resetState() {
-    this.#widgetState = "default";
+    this.#pageState = "default";
   }
 }
 
 export default Builder;
 
-// STB screenshot test builder v. 1.0
+// STB screenshot test builder (page view version)
