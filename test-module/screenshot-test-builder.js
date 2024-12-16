@@ -26,9 +26,10 @@ class Builder {
     },
   };
 
-  forPage(pageRoute) {
+  forPage(pageRoute, customViewName = null) {
     this.#pageRoute = pageRoute;
-    this.#viewName = pageRoute.replace(/\//g, "-");
+    this.#viewName = customViewName
+      || pageRoute.replace(/\//g, "-");
     this.#elementTestId = null;
     return this;
   }
