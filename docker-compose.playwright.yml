@@ -1,0 +1,21 @@
+services:
+  base:
+    image: mcr.microsoft.com/playwright:v1.48.2-jammy
+    volumes:
+      - .:/usr/src/service/
+    working_dir: /usr/src/service/
+    user: pwuser
+
+  console:
+    extends:
+      service: base
+    command: npm run start -w
+
+  ui-mode:
+    extends:
+      service: base
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    command: npm run start -w  -- --ui
+    environment:
+      - DISPLAY
