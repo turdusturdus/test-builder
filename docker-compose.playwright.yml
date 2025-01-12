@@ -1,6 +1,6 @@
 services:
   base:
-    image: mcr.microsoft.com/playwright:v1.48.2-jammy
+    image: mcr.microsoft.com/playwright:v1.49.1-jammy
     volumes:
       - .:/usr/src/service/
     working_dir: /usr/src/service/
@@ -9,7 +9,7 @@ services:
   console:
     extends:
       service: base
-    command: npm run start -w
+    command: npm run start
 
   ui-mode:
     extends:
