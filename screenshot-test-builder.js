@@ -1,9 +1,16 @@
-import { test as t, expect } from '@playwright/test';
+import { test as t, expect } from "@playwright/test";
+
+const customDarkCSS = `
+    body {
+        background: grey;
+    }
+`;
 
 class Builder {
   #pageRoute = null;
   #viewName = null;
-  #viewport = ['desktop', 'mobile'];
+  #viewport = ["desktop", "mobile"];
+  #colorSchemes = ["light", "dark"];
   #viewPortResolution = {
     desktop: {
       width: 1396,
@@ -14,6 +21,7 @@ class Builder {
       height: 480,
     },
   };
+  #customDarkCSS = customDarkCSS;
 
   forPage(pageRoute, customViewName) {
     this.#pageRoute = pageRoute;
@@ -26,46 +34,68 @@ class Builder {
     return this;
   }
 
+  forColorSchemes(colorSchemes) {
+    this.#colorSchemes = colorSchemes;
+    return this;
+  }
+
+  async #setColorScheme(colorScheme, page) {
+    await page.emulateMedia({ colorScheme });
+
+    if (colorScheme === "dark" && this.#customDarkCSS) {
+      page.on("load", async () => {
+        await page.addStyleTag({ content: this.#customDarkCSS });
+      });
+    }
+  }
+
   async #setViewportFor(viewPort, page) {
     await page.setViewportSize(this.#viewPortResolution[viewPort]);
   }
 
   test(variantName) {
-    if (!this.#pageRoute) throw new Error('Page route is not set');
+    if (!this.#pageRoute) throw new Error("Page route is not set");
     const testCases = variantName ? [variantName] : [null];
 
     for (const viewPort of this.#viewport) {
-      for (const variant of testCases) {
-        t(
-          this.#getTestDescription(viewPort, variant),
-          async ({ page }) => {
-            await this.#setViewportFor(viewPort, page);
-            await page.goto(this.#pageRoute);
-            await expect(page).toHaveScreenshot(
-              this.#getReferenceFileFor(viewPort, variant)
-            );
-          }
-        );
+      for (const colorScheme of this.#colorSchemes) {
+        for (const variant of testCases) {
+          t(
+            this.#getTestDescription(viewPort, colorScheme, variant),
+            async ({ page }) => {
+              await this.#setViewportFor(viewPort, page);
+              await this.#setColorScheme(colorScheme, page);
+              await page.goto(this.#pageRoute);
+              await expect(page).toHaveScreenshot(
+                this.#getReferenceFileFor(viewPort, colorScheme, variant),
+                { fullPage: true }
+              );
+            }
+          );
+        }
       }
     }
 
     return this;
   }
 
-  #getTestDescription(viewPort, variantName) {
+  #getTestDescription(viewPort, colorScheme, variantName) {
     return [
       this.#viewName,
       ` in @${viewPort} viewport`,
-      variantName && `, @${variantName} variant`
+      ` with @${colorScheme} color scheme`,
+      variantName && `, @${variantName} variant`,
     ]
       .filter(Boolean)
-      .join('');
+      .join("");
   }
 
-  #getReferenceFileFor(viewPort, variantName) {
+  #getReferenceFileFor(viewPort, colorScheme, variantName) {
     return [
       this.#viewName,
-      [this.#viewName, viewPort, variantName].filter(Boolean).join('-')
+      [this.#viewName, viewPort, colorScheme, variantName]
+        .filter(Boolean)
+        .join("-"),
     ];
   }
 }
