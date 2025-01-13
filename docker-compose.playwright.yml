@@ -16,6 +16,6 @@ services:
       service: base
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
-    command: npm run start -w  -- --ui
+    command: npm run start  -- --ui
     environment:
       - DISPLAY
