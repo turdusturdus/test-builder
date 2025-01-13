@@ -22,6 +22,12 @@ class Builder {
     },
   };
   #customDarkCSS = customDarkCSS;
+  #onlyThis = false;
+
+  only() {
+    this.#onlyThis = true;
+    return this;
+  }
 
   forPage(pageRoute, customViewName) {
     this.#pageRoute = pageRoute;
@@ -55,12 +61,13 @@ class Builder {
 
   test(variantName) {
     if (!this.#pageRoute) throw new Error("Page route is not set");
+    const testFunction = this.#onlyThis ? t.only : t;
     const testCases = variantName ? [variantName] : [null];
 
     for (const viewPort of this.#viewport) {
       for (const colorScheme of this.#colorSchemes) {
         for (const variant of testCases) {
-          t(
+          testFunction(
             this.#getTestDescription(viewPort, colorScheme, variant),
             async ({ page }) => {
               await this.#setViewportFor(viewPort, page);
