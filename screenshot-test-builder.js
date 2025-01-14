@@ -59,6 +59,35 @@ class Builder {
     await page.setViewportSize(this.#viewPortResolution[viewPort]);
   }
 
+  async #mockApiCall(page) {
+    const mockApi = await getMockDataFor(this.#viewName);
+    const { mockApiPresets } = mockApi;
+
+    for (const {
+      endpoint,
+      data,
+      contentType,
+      customQuery = "",
+      apiUrl,
+    } of mockApiPresets.default) {
+      await page.route(
+        `${
+          apiUrl || "https://automationintesting.online"
+        }/${endpoint}${customQuery}`,
+        async (route) => {
+          if (contentType === "text/html") {
+            await route.fulfill({
+              contentType: "text/html",
+              body: data,
+            });
+          } else {
+            await route.fulfill({ json: data });
+          }
+        }
+      );
+    }
+  }
+
   test(variantName) {
     if (!this.#pageRoute) throw new Error("Page route is not set");
     const testFunction = this.#onlyThis ? t.only : t;
@@ -70,6 +99,7 @@ class Builder {
           testFunction(
             this.#getTestDescription(viewPort, colorScheme, variant),
             async ({ page }) => {
+              await this.#mockApiCall(page);
               await this.#setViewportFor(viewPort, page);
               await this.#setColorScheme(colorScheme, page);
               await page.goto(this.#pageRoute);
@@ -105,6 +135,11 @@ class Builder {
         .join("-"),
     ];
   }
+}
+
+async function getMockDataFor(id) {
+  const data = await import(`./mock-api/${id}/${id}.mock.js`);
+  return data;
 }
 
 export default Builder;
