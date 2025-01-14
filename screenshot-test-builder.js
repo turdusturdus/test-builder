@@ -1,4 +1,4 @@
-import { test as t, expect } from "@playwright/test";
+import { test as t, expect } from '@playwright/test';
 
 const customDarkCSS = `
     body {
@@ -9,8 +9,8 @@ const customDarkCSS = `
 class Builder {
   #pageRoute = null;
   #viewName = null;
-  #viewport = ["desktop", "mobile"];
-  #colorSchemes = ["light", "dark"];
+  #viewport = ['desktop', 'mobile'];
+  #colorSchemes = ['light', 'dark'];
   #viewPortResolution = {
     desktop: {
       width: 1396,
@@ -31,7 +31,7 @@ class Builder {
 
   forPage(pageRoute, customViewName) {
     this.#pageRoute = pageRoute;
-    this.#viewName = customViewName || pageRoute.replace(/\//g, "-");
+    this.#viewName = customViewName || pageRoute.replace(/\//g, '-');
     return this;
   }
 
@@ -48,8 +48,8 @@ class Builder {
   async #setColorScheme(colorScheme, page) {
     await page.emulateMedia({ colorScheme });
 
-    if (colorScheme === "dark" && this.#customDarkCSS) {
-      page.on("load", async () => {
+    if (colorScheme === 'dark' && this.#customDarkCSS) {
+      page.on('load', async () => {
         await page.addStyleTag({ content: this.#customDarkCSS });
       });
     }
@@ -67,17 +67,17 @@ class Builder {
       endpoint,
       data,
       contentType,
-      customQuery = "",
+      customQuery = '',
       apiUrl,
     } of mockApiPresets.default) {
       await page.route(
         `${
-          apiUrl || "https://automationintesting.online"
+          apiUrl || 'https://automationintesting.online'
         }/${endpoint}${customQuery}`,
         async (route) => {
-          if (contentType === "text/html") {
+          if (contentType === 'text/html') {
             await route.fulfill({
-              contentType: "text/html",
+              contentType: 'text/html',
               body: data,
             });
           } else {
@@ -89,7 +89,7 @@ class Builder {
   }
 
   test(variantName) {
-    if (!this.#pageRoute) throw new Error("Page route is not set");
+    if (!this.#pageRoute) throw new Error('Page route is not set');
     const testFunction = this.#onlyThis ? t.only : t;
     const testCases = variantName ? [variantName] : [null];
 
@@ -124,7 +124,7 @@ class Builder {
       variantName && `, @${variantName} variant`,
     ]
       .filter(Boolean)
-      .join("");
+      .join('');
   }
 
   #getReferenceFileFor(viewPort, colorScheme, variantName) {
@@ -132,7 +132,7 @@ class Builder {
       this.#viewName,
       [this.#viewName, viewPort, colorScheme, variantName]
         .filter(Boolean)
-        .join("-"),
+        .join('-'),
     ];
   }
 }
