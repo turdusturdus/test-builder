@@ -1,9 +1,5 @@
 {
   "version": "1.0.0",
-  "devDependencies": {
-    "@axe-core/playwright": "^4.10.1",
-    "@playwright/test": "^1.49.1"
-  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "playwright test",
@@ -12,5 +8,10 @@
   },
   "author": "",
   "license": "private",
-  "type": "module"
+  "type": "module",
+  "dependencies": {    "@axe-core/playwright": "^4.10.1",
+    "@playwright/test": "^1.49.1",
+    "@babel/parser": "^7.26.5",
+    "@babel/traverse": "^7.26.5"
+  }
 }
