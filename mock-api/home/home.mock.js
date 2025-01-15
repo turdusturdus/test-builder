@@ -1,3 +1,8 @@
+import fs from 'fs';
+
+const roomImage = fs.readFileSync(new URL('./room2.jpg', import.meta.url));
+const rbpLogo = fs.readFileSync(new URL('./rbp-logo.jpg', import.meta.url));
+
 const mockApi = {
   branding: {
     default: {
@@ -43,10 +48,28 @@ const mockApi = {
       },
     },
   },
+  images: {
+    room: {
+      endpoint: 'images/room2.jpg',
+      query: '',
+      contentType: 'image/jpeg',
+      data: roomImage,
+    },
+    logo: {
+      endpoint: 'images/rbp-logo.jpg',
+      query: '',
+      contentType: 'image/jpeg',
+      data: rbpLogo,
+    },
+  },
 };
 
 const mockApiPresets = {
-  default: [mockApi['branding'].default, mockApi['room'].default],
+  default: [
+    mockApi['branding'].default,
+    mockApi['room'].default,
+    mockApi['images'].room,
+  ],
 };
 
 export { mockApi, mockApiPresets };

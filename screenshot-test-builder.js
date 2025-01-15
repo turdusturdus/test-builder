@@ -80,6 +80,11 @@ class Builder {
               contentType: 'text/html',
               body: data,
             });
+          } else if (contentType?.startsWith('image/')) {
+            await route.fulfill({
+              contentType: contentType,
+              body: data,
+            });
           } else {
             await route.fulfill({ json: data });
           }
