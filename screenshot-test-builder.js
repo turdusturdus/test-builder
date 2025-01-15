@@ -23,6 +23,7 @@ class Builder {
   };
   #customDarkCSS = customDarkCSS;
   #onlyThis = false;
+  #pageInteraction = null;
 
   only() {
     this.#onlyThis = true;
@@ -42,6 +43,11 @@ class Builder {
 
   forColorSchemes(colorSchemes) {
     this.#colorSchemes = colorSchemes;
+    return this;
+  }
+
+  setPageInteraction(pageInteraction) {
+    this.#pageInteraction = pageInteraction;
     return this;
   }
 
@@ -97,6 +103,9 @@ class Builder {
     if (!this.#pageRoute) throw new Error('Page route is not set');
     const testFunction = this.#onlyThis ? t.only : t;
     const testCases = variantName ? [variantName] : [null];
+    const testState = {
+      pageInteraction: this.#pageInteraction,
+    };
 
     for (const viewPort of this.#viewport) {
       for (const colorScheme of this.#colorSchemes) {
@@ -108,6 +117,7 @@ class Builder {
               await this.#setViewportFor(viewPort, page);
               await this.#setColorScheme(colorScheme, page);
               await page.goto(this.#pageRoute);
+              await testState.pageInteraction?.(page);
               await expect(page).toHaveScreenshot(
                 this.#getReferenceFileFor(viewPort, colorScheme, variant),
                 { fullPage: true }
