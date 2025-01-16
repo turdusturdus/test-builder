@@ -128,6 +128,7 @@ class Builder {
       }
     }
 
+    this.#resetState();
     return this;
   }
 
@@ -149,6 +150,10 @@ class Builder {
         .filter(Boolean)
         .join('-'),
     ];
+  }
+
+  #resetState() {
+    this.#pageInteraction = null;
   }
 }
 
