@@ -5,12 +5,13 @@ import path from 'path';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 import parser from '@babel/parser';
-import _traverse from '@babel/traverse';
+import _traverse from '@babel/traverse'; // don't remove this comment and don't change the way traverse and generate is imported
 const traverse = _traverse.default;
 import _generate from '@babel/generator';
 const generate = _generate.default;
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import * as t from '@babel/types'; // **Added Import for Babel Types**
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -129,12 +130,220 @@ function getSetPageInteractionCode(filePath, selectedVariant) {
   }
 }
 
+// **Revised Function to Override or Add setPageInteraction**
+function overrideSetPageInteraction(
+  filePath,
+  selectedVariant,
+  newInteractionCode
+) {
+  const code = fs.readFileSync(filePath, 'utf-8');
+  const ast = parser.parse(code, {
+    sourceType: 'module',
+    plugins: ['jsx', 'classProperties', 'dynamicImport'],
+  });
+
+  let variantFound = false;
+  let currentVariant = 'main'; // Initialize currentVariant
+
+  traverse(ast, {
+    CallExpression(path) {
+      const callee = path.node.callee;
+
+      // Handle chained method calls
+      if (callee.type === 'MemberExpression') {
+        const methodName = callee.property.name;
+
+        if (methodName === 'test') {
+          // Extract variant name
+          const args = path.node.arguments;
+          if (args.length > 0 && args[0].type === 'StringLiteral') {
+            currentVariant = args[0].value;
+          } else {
+            currentVariant = 'main';
+          }
+        }
+
+        if (methodName === 'setPageInteraction') {
+          // Check if current variant matches
+          if (currentVariant === selectedVariant) {
+            // **Parse Only the Arrow Function Body**
+            const functionAst = parser.parse(
+              `async (page) => { ${newInteractionCode} }`,
+              { sourceType: 'module' }
+            ).program.body[0].expression;
+
+            // **Programmatically Build the .setPageInteraction(...) Call**
+            const newCallExpression = t.callExpression(
+              t.memberExpression(
+                callee.object, // The preceding chain, e.g., the `.test('variantName')`
+                t.identifier('setPageInteraction')
+              ),
+              [functionAst]
+            );
+
+            // **Replace the Existing setPageInteraction Call with the New One**
+            path.replaceWith(newCallExpression);
+
+            variantFound = true;
+            path.stop(); // Exit traversal once replaced
+          }
+        }
+      }
+    },
+  });
+
+  if (!variantFound) {
+    console.log(
+      chalk.yellow(
+        `No setPageInteraction found for variant "${selectedVariant}". Adding a new one.`
+      )
+    );
+
+    // **To Add a New setPageInteraction for the Variant, Modify the Existing Method Chain**
+    traverse(ast, {
+      CallExpression(path) {
+        const callee = path.node.callee;
+
+        if (callee.type === 'MemberExpression') {
+          const methodName = callee.property.name;
+
+          if (methodName === 'test') {
+            const args = path.node.arguments;
+            let variantName = 'main';
+            if (
+              args.length > 0 &&
+              args[0].type === 'StringLiteral' &&
+              args[0].value !== ''
+            ) {
+              variantName = args[0].value;
+            }
+
+            // Check if the current test() corresponds to the selectedVariant
+            if (
+              (selectedVariant === 'main' && args.length === 0) ||
+              args[0].value === selectedVariant
+            ) {
+              // **Parse Only the Arrow Function Body**
+              const functionAst = parser.parse(
+                `async (page) => { ${newInteractionCode} }`,
+                { sourceType: 'module' }
+              ).program.body[0].expression;
+
+              // **Programmatically Build the .setPageInteraction(...) Call**
+              const setPageInteractionCall = t.callExpression(
+                t.memberExpression(
+                  callee.object, // The preceding chain, e.g., the `.test('variantName')`
+                  t.identifier('setPageInteraction')
+                ),
+                [functionAst]
+              );
+
+              // **Modify the Current .test(...) Call to Include .setPageInteraction(...) Before It**
+              path.node.callee.object = setPageInteractionCall;
+
+              variantFound = true;
+              path.stop(); // Exit traversal once added
+            }
+          }
+        }
+      },
+    });
+
+    if (!variantFound && selectedVariant === 'main') {
+      // **Special Handling for 'main' Variant: Insert setPageInteraction Before the First test() Call**
+      traverse(ast, {
+        ExpressionStatement(path) {
+          const expression = path.node.expression;
+
+          if (
+            expression.type === 'CallExpression' &&
+            expression.callee.type === 'MemberExpression' &&
+            expression.callee.object.type === 'NewExpression' &&
+            expression.callee.object.callee.name === 'ScreenshotTest'
+          ) {
+            // **Parse Only the Arrow Function Body**
+            const functionAst = parser.parse(
+              `async (page) => { ${newInteractionCode} }`,
+              { sourceType: 'module' }
+            ).program.body[0].expression;
+
+            // **Programmatically Build the .setPageInteraction(...) Call**
+            const setPageInteractionCall = t.callExpression(
+              t.memberExpression(
+                expression, // The preceding chain, e.g., `new ScreenshotTest().forPage('/', 'home').only()`
+                t.identifier('setPageInteraction')
+              ),
+              [functionAst]
+            );
+
+            // **Modify the Existing Chain to Include .setPageInteraction(...) Before .test()**
+            const newTestCall = t.callExpression(
+              t.memberExpression(
+                setPageInteractionCall, // `...setPageInteraction(...)`
+                t.identifier('test')
+              ),
+              [t.stringLiteral('newInteraction')]
+            );
+
+            // **Replace the Existing Expression with the Modified One**
+            path.replaceWith(t.expressionStatement(newTestCall));
+
+            variantFound = true;
+            path.stop(); // Exit traversal once added
+          }
+        },
+      });
+    }
+
+    if (!variantFound) {
+      console.log(
+        chalk.red(
+          `Failed to add setPageInteraction for variant "${selectedVariant}". Please ensure the variant exists.`
+        )
+      );
+      return;
+    }
+
+    console.log(
+      chalk.green(
+        `setPageInteraction for variant "${selectedVariant}" has been added successfully.`
+      )
+    );
+  } else {
+    console.log(
+      chalk.green(
+        `setPageInteraction for variant "${selectedVariant}" has been overridden successfully.`
+      )
+    );
+  }
+
+  // Generate the modified code
+  const output = generate(
+    ast,
+    {
+      /* options */
+    },
+    code
+  ).code;
+
+  // Write back to the file
+  fs.writeFileSync(filePath, output, 'utf-8');
+}
+
 // Main function to run the CLI
 async function runTestManager() {
   console.log(chalk.green('Welcome to testManager CLI!\n'));
 
   // Step 1: List all .spec.js files
-  const specFiles = getSpecFiles(path.join(__dirname, 'tests'));
+  const testsDir = path.join(__dirname, 'tests');
+  if (!fs.existsSync(testsDir)) {
+    console.log(
+      chalk.red(`Tests directory does not exist at path: ${testsDir}`)
+    );
+    return;
+  }
+
+  const specFiles = getSpecFiles(testsDir);
   if (specFiles.length === 0) {
     console.log(chalk.red('No .spec.js files found.'));
     return;
@@ -191,7 +400,52 @@ async function runTestManager() {
     console.log(chalk.yellow('No setPageInteraction code to display.'));
   }
 
-  // You can add additional logic here, such as running the test or displaying more information.
+  // Step 6: Prompt to override the setPageInteraction
+  const { shouldOverride } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'shouldOverride',
+      message:
+        'Do you want to override the setPageInteraction with the contents from ./pageInteraction?',
+      default: false,
+    },
+  ]);
+
+  if (shouldOverride) {
+    const pageInteractionPath = path.resolve(process.cwd(), 'pageInteraction');
+    if (!fs.existsSync(pageInteractionPath)) {
+      console.log(
+        chalk.red(
+          `The file ./pageInteraction does not exist at path: ${pageInteractionPath}`
+        )
+      );
+      return;
+    }
+
+    const newInteractionCode = fs
+      .readFileSync(pageInteractionPath, 'utf-8')
+      .trim();
+
+    if (!newInteractionCode) {
+      console.log(
+        chalk.red(
+          'The ./pageInteraction file is empty. Please provide valid interaction code.'
+        )
+      );
+      return;
+    }
+
+    // Override the setPageInteraction in the selected spec file
+    overrideSetPageInteraction(
+      selectedSpecFile,
+      selectedVariant,
+      newInteractionCode
+    );
+  } else {
+    console.log(chalk.blue('No changes were made.'));
+  }
+
+  console.log(chalk.green('\nTest Manager operation completed.'));
 }
 
 runTestManager();
