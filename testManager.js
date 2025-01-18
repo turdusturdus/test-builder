@@ -12,6 +12,7 @@ const generate = _generate.default;
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import * as t from '@babel/types'; // **Added Import for Babel Types**
+import prettier from 'prettier'; // **Imported Prettier**
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -131,7 +132,7 @@ function getSetPageInteractionCode(filePath, selectedVariant) {
 }
 
 // **Revised Function to Override or Add setPageInteraction**
-function overrideSetPageInteraction(
+async function overrideSetPageInteraction(
   filePath,
   selectedVariant,
   newInteractionCode
@@ -318,7 +319,7 @@ function overrideSetPageInteraction(
   }
 
   // Generate the modified code
-  const output = generate(
+  let output = generate(
     ast,
     {
       /* options */
@@ -326,8 +327,45 @@ function overrideSetPageInteraction(
     code
   ).code;
 
+  // **Format the code with Prettier before writing**
+  try {
+    const prettierConfig = await prettier.resolveConfig(filePath);
+    output = await prettier.format(output, {
+      ...prettierConfig,
+      filepath: filePath, // Ensure Prettier uses the correct parser based on file extension
+    });
+    console.log(chalk.green('Code formatted with Prettier successfully.'));
+  } catch (error) {
+    console.log(
+      chalk.red('An error occurred while formatting the code with Prettier:')
+    );
+    console.error(error);
+    return;
+  }
+
   // Write back to the file
   fs.writeFileSync(filePath, output, 'utf-8');
+}
+
+// **Function to Format File with Prettier**
+async function formatFileWithPrettier(filePath) {
+  try {
+    const fileContent = await fs.promises.readFile(filePath, 'utf-8');
+    const prettierConfig = await prettier.resolveConfig(filePath);
+
+    const formatted = await prettier.format(fileContent, {
+      ...prettierConfig,
+      filepath: filePath, // This ensures Prettier uses the correct parser based on file extension
+    });
+
+    await fs.promises.writeFile(filePath, formatted, 'utf-8');
+    console.log(chalk.green(`Formatted ${filePath} with Prettier successfully.`));
+  } catch (error) {
+    console.log(
+      chalk.red(`An error occurred while formatting ${filePath} with Prettier:`)
+    );
+    console.error(error);
+  }
 }
 
 // Main function to run the CLI
@@ -436,11 +474,14 @@ async function runTestManager() {
     }
 
     // Override the setPageInteraction in the selected spec file
-    overrideSetPageInteraction(
+    await overrideSetPageInteraction(
       selectedSpecFile,
       selectedVariant,
       newInteractionCode
     );
+
+    // **Format the file with Prettier after overriding**
+    await formatFileWithPrettier(selectedSpecFile);
   } else {
     console.log(chalk.blue('No changes were made.'));
   }
