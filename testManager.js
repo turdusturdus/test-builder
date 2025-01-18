@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+//@ts-check
 import fs from 'fs';
 import path from 'path';
 import inquirer from 'inquirer';
@@ -347,6 +348,98 @@ async function overrideSetPageInteraction(
   fs.writeFileSync(filePath, output, 'utf-8');
 }
 
+/**
+ * Removes the setPageInteraction for a specific test variant.
+ *
+ * @param {string} filePath - The path to the spec file.
+ * @param {string} selectedVariant - The test variant to remove the interaction from.
+ */
+async function removeSetPageInteraction(filePath, selectedVariant) {
+  const code = fs.readFileSync(filePath, 'utf-8');
+  const ast = parser.parse(code, {
+    sourceType: 'module',
+    plugins: ['jsx', 'classProperties', 'dynamicImport'],
+  });
+
+  let variantFound = false;
+  let currentVariant = 'main'; // Initialize currentVariant
+
+  traverse(ast, {
+    CallExpression(path) {
+      const callee = path.node.callee;
+
+      // Handle chained method calls
+      if (callee.type === 'MemberExpression') {
+        const methodName = callee.property.name;
+
+        if (methodName === 'test') {
+          // Extract variant name
+          const args = path.node.arguments;
+          if (args.length > 0 && args[0].type === 'StringLiteral') {
+            currentVariant = args[0].value;
+          } else {
+            currentVariant = 'main';
+          }
+        }
+
+        if (methodName === 'setPageInteraction') {
+          // Check if current variant matches
+          if (currentVariant === selectedVariant) {
+            // **Replace the setPageInteraction Call with its preceding chain**
+            const precedingChain = callee.object;
+            path.replaceWith(precedingChain);
+
+            variantFound = true;
+            path.stop(); // Exit traversal once removed
+          }
+        }
+      }
+    },
+  });
+
+  if (variantFound) {
+    console.log(
+      chalk.green(
+        `setPageInteraction for variant "${selectedVariant}" has been removed successfully.`
+      )
+    );
+  } else {
+    console.log(
+      chalk.yellow(
+        `No setPageInteraction found for variant "${selectedVariant}".`
+      )
+    );
+  }
+
+  // Generate the modified code
+  let output = generate(
+    ast,
+    {
+      /* options */
+    },
+    code
+  ).code;
+
+  // Format the code with Prettier before writing
+  try {
+    const prettierConfig = await prettier.resolveConfig(filePath);
+    output = await prettier.format(output, {
+      ...prettierConfig,
+      filepath: filePath, // Ensure Prettier uses the correct parser based on file extension
+    });
+    console.log(chalk.green('Code formatted with Prettier successfully.'));
+  } catch (error) {
+    console.log(
+      chalk.red('An error occurred while formatting the code with Prettier:')
+    );
+    console.error(error);
+    return;
+  }
+
+  // Write back to the file
+  fs.writeFileSync(filePath, output, 'utf-8');
+}
+
 // **Function to Format File with Prettier**
 async function formatFileWithPrettier(filePath) {
   try {
@@ -438,18 +531,23 @@ async function runTestManager() {
     console.log(chalk.yellow('No setPageInteraction code to display.'));
   }
 
-  // Step 6: Prompt to override the setPageInteraction
-  const { shouldOverride } = await inquirer.prompt([
+  // Step 6: Prompt for action - Override, Remove, or Do Nothing
+  const { actionChoice } = await inquirer.prompt([
     {
-      type: 'confirm',
-      name: 'shouldOverride',
-      message:
-        'Do you want to override the setPageInteraction with the contents from ./pageInteraction?',
-      default: false,
+      type: 'list',
+      name: 'actionChoice',
+      message: 'What would you like to do with setPageInteraction?',
+      choices: [
+        { name: 'Override setPageInteraction', value: 'override' },
+        { name: 'Remove setPageInteraction', value: 'remove' },
+        { name: 'Do Nothing', value: 'nothing' },
+      ],
+      default: 'nothing',
     },
   ]);
 
-  if (shouldOverride) {
+  if (actionChoice === 'override') {
+    // Override the setPageInteraction with contents from ./pageInteraction
     const pageInteractionPath = path.resolve(process.cwd(), 'pageInteraction');
     if (!fs.existsSync(pageInteractionPath)) {
       console.log(
@@ -480,7 +578,13 @@ async function runTestManager() {
       newInteractionCode
     );
 
-    // **Format the file with Prettier after overriding**
+    // Format the file with Prettier after overriding
+    await formatFileWithPrettier(selectedSpecFile);
+  } else if (actionChoice === 'remove') {
+    // Remove the setPageInteraction for the selected variant
+    await removeSetPageInteraction(selectedSpecFile, selectedVariant);
+
+    // Format the file with Prettier after removal
     await formatFileWithPrettier(selectedSpecFile);
   } else {
     console.log(chalk.blue('No changes were made.'));
