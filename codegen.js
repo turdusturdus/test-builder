@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// playwright-module.js
+// codegen.js
 import { exec } from 'child_process';
 import fs from 'fs';
 import path from 'path';
@@ -29,91 +29,81 @@ const executeCommand = (command) => {
   });
 };
 
-// Function to parse the input.js file and extract function bodies
-const parseInputFile = async (inputFile, outputFile) => {
-  const inputFilePath = path.resolve(__dirname, inputFile);
-  const outputFilePath = path.resolve(__dirname, outputFile);
-
-  try {
-    const code = await fs.promises.readFile(inputFilePath, 'utf8');
-
-    const ast = babelParser.parse(code, {
-      sourceType: 'module',
-      plugins: ['jsx', 'typescript'],
-    });
-
-    let extractedCode = '';
-
-    traverse(ast, {
-      FunctionDeclaration(path) {
-        const body = path.node.body;
-        const functionCode = extractBodyCode(body, code);
-        extractedCode += functionCode + '\n';
-      },
-      FunctionExpression(path) {
-        const body = path.node.body;
-        const functionCode = extractBodyCode(body, code);
-        extractedCode += functionCode + '\n';
-      },
-      ArrowFunctionExpression(path) {
-        const body = path.node.body;
-        if (body.type === 'BlockStatement') {
-          const functionCode = extractBodyCode(body, code);
-          extractedCode += functionCode + '\n';
-        }
-      },
-    });
-
-    await fs.promises.writeFile(outputFilePath, extractedCode, 'utf8');
-    console.log(`Extracted code has been written to ${outputFilePath}`);
-  } catch (err) {
-    console.error('Error during parsing:', err);
-    throw err;
-  }
-};
-
 // Helper function to extract the body code from AST nodes
 const extractBodyCode = (body, fullCode) => {
   const { start, end } = body;
   const bodyCode = fullCode.slice(start + 1, end - 1).trim();
 
   const lines = bodyCode.split('\n');
-
   if (lines.length > 0) {
-    lines.shift(); // Remove the first line if needed
+    lines.shift(); // Optionally remove the first line if needed
   }
 
   return lines.join('\n');
 };
 
-// Main function to orchestrate the steps
-const main = async () => {
-  const args = process.argv.slice(2);
+// Function to parse the generated Playwright file and return extracted code
+const parseInputFile = async (inputFile) => {
+  const code = await fs.promises.readFile(inputFile, 'utf8');
+  const ast = babelParser.parse(code, {
+    sourceType: 'module',
+    plugins: ['jsx', 'typescript'],
+  });
 
-  if (args.length === 0) {
-    console.error('Usage: node playwright-module.js <pageUrl> [outputFile]');
-    process.exit(1);
-  }
+  let extractedCode = '';
 
-  const [pageUrl, outputFile = 'output.js'] = args;
-  const inputFile = 'input.js';
+  traverse(ast, {
+    FunctionDeclaration(path) {
+      const body = path.node.body;
+      const functionCode = extractBodyCode(body, code);
+      extractedCode += functionCode + '\n';
+    },
+    FunctionExpression(path) {
+      const body = path.node.body;
+      const functionCode = extractBodyCode(body, code);
+      extractedCode += functionCode + '\n';
+    },
+    ArrowFunctionExpression(path) {
+      const body = path.node.body;
+      if (body.type === 'BlockStatement') {
+        const functionCode = extractBodyCode(body, code);
+        extractedCode += functionCode + '\n';
+      }
+    },
+  });
+
+  // Return the raw extracted code
+  return extractedCode.trim();
+};
+
+/**
+ * Main reusable function that:
+ * 1) Runs `npx playwright codegen <pageUrl>`.
+ * 2) Parses the generated file and extracts relevant code.
+ * 3) Cleans up the temporary input file.
+ *
+ * @param {string} pageUrl - The URL to codegen against.
+ * @returns {Promise<string>} - The extracted code as a string.
+ */
+export async function codegenAndExtract(pageUrl) {
+  const inputFile = path.join(__dirname, 'input.js');
 
   try {
+    // 1. Run codegen to create input.js
     console.log(`Running playwright codegen for URL: ${pageUrl}`);
     await executeCommand(`npx playwright codegen ${pageUrl} --output=${inputFile}`);
     console.log('Playwright codegen completed.');
 
-    await parseInputFile(inputFile, outputFile);
+    // 2. Parse the generated file and extract code
+    const extractedCode = await parseInputFile(inputFile);
 
-    // Remove the input.js file
-    const inputFilePath = path.resolve(__dirname, inputFile);
-    await fs.promises.unlink(inputFilePath);
-    console.log(`Removed temporary file: ${inputFilePath}`);
+    // 3. Remove the temporary input file
+    await fs.promises.unlink(inputFile);
+    console.log(`Removed temporary file: ${inputFile}`);
+
+    return extractedCode;
   } catch (err) {
-    console.error('An error occurred:', err);
-    process.exit(1);
+    console.error('An error occurred during codegen:', err);
+    throw err;
   }
-};
-
-// Execute the main function
-main();
+}

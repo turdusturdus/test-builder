@@ -11,8 +11,9 @@ import _generate from '@babel/generator';
 const generate = _generate.default;
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import * as t from '@babel/types'; // **Added Import for Babel Types**
-import prettier from 'prettier'; // **Imported Prettier**
+import * as t from '@babel/types';
+import prettier from 'prettier';
+import { codegenAndExtract } from './codegen.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -73,7 +74,6 @@ function getSetPageInteractionCode(filePath, selectedVariant) {
   let currentVariant = 'main'; // Default variant
 
   traverse(ast, {
-    // Traverse method calls in order
     CallExpression(path) {
       const callee = path.node.callee;
 
@@ -120,7 +120,6 @@ function getSetPageInteractionCode(filePath, selectedVariant) {
 
   // Now, retrieve the interaction for the selected variant
   const interaction = variantToInteraction[selectedVariant];
-
   if (interaction) {
     return interaction;
   } else {
@@ -131,12 +130,8 @@ function getSetPageInteractionCode(filePath, selectedVariant) {
   }
 }
 
-// **Revised Function to Override or Add setPageInteraction**
-async function overrideSetPageInteraction(
-  filePath,
-  selectedVariant,
-  newInteractionCode
-) {
+// Revised Function to Override or Add setPageInteraction
+async function overrideSetPageInteraction(filePath, selectedVariant, newInteractionCode) {
   const code = fs.readFileSync(filePath, 'utf-8');
   const ast = parser.parse(code, {
     sourceType: 'module',
@@ -167,26 +162,26 @@ async function overrideSetPageInteraction(
         if (methodName === 'setPageInteraction') {
           // Check if current variant matches
           if (currentVariant === selectedVariant) {
-            // **Parse Only the Arrow Function Body**
+            // Parse only the Arrow Function Body
             const functionAst = parser.parse(
               `async (page) => { ${newInteractionCode} }`,
               { sourceType: 'module' }
             ).program.body[0].expression;
 
-            // **Programmatically Build the .setPageInteraction(...) Call**
+            // Programmatically build the .setPageInteraction(...) call
             const newCallExpression = t.callExpression(
               t.memberExpression(
-                callee.object, // The preceding chain, e.g., the `.test('variantName')`
+                callee.object,
                 t.identifier('setPageInteraction')
               ),
               [functionAst]
             );
 
-            // **Replace the Existing setPageInteraction Call with the New One**
+            // Replace the existing setPageInteraction call
             path.replaceWith(newCallExpression);
 
             variantFound = true;
-            path.stop(); // Exit traversal once replaced
+            path.stop();
           }
         }
       }
@@ -196,15 +191,14 @@ async function overrideSetPageInteraction(
   if (!variantFound) {
     console.log(
       chalk.yellow(
-        `No setPageInteraction found for variant "${selectedVariant}". Adding a new one.`
+        `No setPageInteraction found for variant "${selectedVariant}". Adding a new one...`
       )
     );
 
-    // **To Add a New setPageInteraction for the Variant, Modify the Existing Method Chain**
+    // If the test with this variant exists but .setPageInteraction doesn't:
     traverse(ast, {
       CallExpression(path) {
         const callee = path.node.callee;
-
         if (callee.type === 'MemberExpression') {
           const methodName = callee.property.name;
 
@@ -224,134 +218,57 @@ async function overrideSetPageInteraction(
               (selectedVariant === 'main' && args.length === 0) ||
               args[0].value === selectedVariant
             ) {
-              // **Parse Only the Arrow Function Body**
+              // Parse only the Arrow Function Body
               const functionAst = parser.parse(
                 `async (page) => { ${newInteractionCode} }`,
                 { sourceType: 'module' }
               ).program.body[0].expression;
 
-              // **Programmatically Build the .setPageInteraction(...) Call**
+              // Programmatically build the .setPageInteraction(...) call
               const setPageInteractionCall = t.callExpression(
                 t.memberExpression(
-                  callee.object, // The preceding chain, e.g., the `.test('variantName')`
+                  callee.object,
                   t.identifier('setPageInteraction')
                 ),
                 [functionAst]
               );
 
-              // **Modify the Current .test(...) Call to Include .setPageInteraction(...) Before It**
+              // Insert .setPageInteraction(...) into the chain
               path.node.callee.object = setPageInteractionCall;
 
               variantFound = true;
-              path.stop(); // Exit traversal once added
+              path.stop();
             }
           }
         }
       },
     });
-
-    if (!variantFound && selectedVariant === 'main') {
-      // **Special Handling for 'main' Variant: Insert setPageInteraction Before the First test() Call**
-      traverse(ast, {
-        ExpressionStatement(path) {
-          const expression = path.node.expression;
-
-          if (
-            expression.type === 'CallExpression' &&
-            expression.callee.type === 'MemberExpression' &&
-            expression.callee.object.type === 'NewExpression' &&
-            expression.callee.object.callee.name === 'ScreenshotTest'
-          ) {
-            // **Parse Only the Arrow Function Body**
-            const functionAst = parser.parse(
-              `async (page) => { ${newInteractionCode} }`,
-              { sourceType: 'module' }
-            ).program.body[0].expression;
-
-            // **Programmatically Build the .setPageInteraction(...) Call**
-            const setPageInteractionCall = t.callExpression(
-              t.memberExpression(
-                expression, // The preceding chain, e.g., `new ScreenshotTest().forPage('/', 'home').only()`
-                t.identifier('setPageInteraction')
-              ),
-              [functionAst]
-            );
-
-            // **Modify the Existing Chain to Include .setPageInteraction(...) Before .test()**
-            const newTestCall = t.callExpression(
-              t.memberExpression(
-                setPageInteractionCall, // `...setPageInteraction(...)`
-                t.identifier('test')
-              ),
-              [t.stringLiteral('newInteraction')]
-            );
-
-            // **Replace the Existing Expression with the Modified One**
-            path.replaceWith(t.expressionStatement(newTestCall));
-
-            variantFound = true;
-            path.stop(); // Exit traversal once added
-          }
-        },
-      });
-    }
-
-    if (!variantFound) {
-      console.log(
-        chalk.red(
-          `Failed to add setPageInteraction for variant "${selectedVariant}". Please ensure the variant exists.`
-        )
-      );
-      return;
-    }
-
-    console.log(
-      chalk.green(
-        `setPageInteraction for variant "${selectedVariant}" has been added successfully.`
-      )
-    );
-  } else {
-    console.log(
-      chalk.green(
-        `setPageInteraction for variant "${selectedVariant}" has been overridden successfully.`
-      )
-    );
   }
 
   // Generate the modified code
-  let output = generate(
-    ast,
-    {
-      /* options */
-    },
-    code
-  ).code;
+  let output = generate(ast, {}, code).code;
 
-  // **Format the code with Prettier before writing**
+  // Format the code with Prettier before writing
   try {
     const prettierConfig = await prettier.resolveConfig(filePath);
     output = await prettier.format(output, {
       ...prettierConfig,
-      filepath: filePath, // Ensure Prettier uses the correct parser based on file extension
+      filepath: filePath,
     });
     console.log(chalk.green('Code formatted with Prettier successfully.'));
   } catch (error) {
-    console.log(
-      chalk.red('An error occurred while formatting the code with Prettier:')
-    );
-    console.error(error);
-    return;
+    console.log(chalk.red('Error while formatting with Prettier:'), error);
   }
 
   // Write back to the file
   fs.writeFileSync(filePath, output, 'utf-8');
+  console.log(
+    chalk.green(`setPageInteraction for variant "${selectedVariant}" updated/added successfully.`)
+  );
 }
 
 /**
  * Removes the setPageInteraction for a specific test variant.
- *
- * @param {string} filePath - The path to the spec file.
- * @param {string} selectedVariant - The test variant to remove the interaction from.
  */
 async function removeSetPageInteraction(filePath, selectedVariant) {
   const code = fs.readFileSync(filePath, 'utf-8');
@@ -361,18 +278,16 @@ async function removeSetPageInteraction(filePath, selectedVariant) {
   });
 
   let variantFound = false;
-  let currentVariant = 'main'; // Initialize currentVariant
+  let currentVariant = 'main';
 
   traverse(ast, {
     CallExpression(path) {
       const callee = path.node.callee;
 
-      // Handle chained method calls
       if (callee.type === 'MemberExpression') {
         const methodName = callee.property.name;
 
         if (methodName === 'test') {
-          // Extract variant name
           const args = path.node.arguments;
           if (args.length > 0 && args[0].type === 'StringLiteral') {
             currentVariant = args[0].value;
@@ -382,64 +297,43 @@ async function removeSetPageInteraction(filePath, selectedVariant) {
         }
 
         if (methodName === 'setPageInteraction') {
-          // Check if current variant matches
           if (currentVariant === selectedVariant) {
-            // **Replace the setPageInteraction Call with its preceding chain**
             const precedingChain = callee.object;
             path.replaceWith(precedingChain);
-
             variantFound = true;
-            path.stop(); // Exit traversal once removed
+            path.stop();
           }
         }
       }
     },
   });
 
-  if (variantFound) {
+  if (!variantFound) {
     console.log(
-      chalk.green(
-        `setPageInteraction for variant "${selectedVariant}" has been removed successfully.`
-      )
+      chalk.yellow(`No setPageInteraction found for variant "${selectedVariant}".`)
     );
   } else {
     console.log(
-      chalk.yellow(
-        `No setPageInteraction found for variant "${selectedVariant}".`
-      )
+      chalk.green(`setPageInteraction for variant "${selectedVariant}" removed successfully.`)
     );
   }
 
-  // Generate the modified code
-  let output = generate(
-    ast,
-    {
-      /* options */
-    },
-    code
-  ).code;
-
-  // Format the code with Prettier before writing
+  let output = generate(ast, {}, code).code;
   try {
     const prettierConfig = await prettier.resolveConfig(filePath);
     output = await prettier.format(output, {
       ...prettierConfig,
-      filepath: filePath, // Ensure Prettier uses the correct parser based on file extension
+      filepath: filePath,
     });
     console.log(chalk.green('Code formatted with Prettier successfully.'));
   } catch (error) {
-    console.log(
-      chalk.red('An error occurred while formatting the code with Prettier:')
-    );
-    console.error(error);
-    return;
+    console.log(chalk.red('Error while formatting with Prettier:'), error);
   }
 
-  // Write back to the file
   fs.writeFileSync(filePath, output, 'utf-8');
 }
 
-// **Function to Format File with Prettier**
+// Utility function to format a file with Prettier
 async function formatFileWithPrettier(filePath) {
   try {
     const fileContent = await fs.promises.readFile(filePath, 'utf-8');
@@ -447,29 +341,26 @@ async function formatFileWithPrettier(filePath) {
 
     const formatted = await prettier.format(fileContent, {
       ...prettierConfig,
-      filepath: filePath, // This ensures Prettier uses the correct parser based on file extension
+      filepath: filePath,
     });
 
     await fs.promises.writeFile(filePath, formatted, 'utf-8');
     console.log(chalk.green(`Formatted ${filePath} with Prettier successfully.`));
   } catch (error) {
     console.log(
-      chalk.red(`An error occurred while formatting ${filePath} with Prettier:`)
+      chalk.red(`An error occurred while formatting ${filePath} with Prettier:`),
+      error
     );
-    console.error(error);
   }
 }
 
-// Main function to run the CLI
 async function runTestManager() {
   console.log(chalk.green('Welcome to testManager CLI!\n'));
 
   // Step 1: List all .spec.js files
   const testsDir = path.join(__dirname, 'tests');
   if (!fs.existsSync(testsDir)) {
-    console.log(
-      chalk.red(`Tests directory does not exist at path: ${testsDir}`)
-    );
+    console.log(chalk.red(`Tests directory does not exist at path: ${testsDir}`));
     return;
   }
 
@@ -495,7 +386,6 @@ async function runTestManager() {
 
   // Step 3: Extract test variants from the selected file
   const testVariants = getTestVariants(selectedSpecFile);
-
   if (testVariants.length === 0) {
     console.log(chalk.yellow('No test variants found.'));
     return;
@@ -511,33 +401,31 @@ async function runTestManager() {
     },
   ]);
 
-  console.log(chalk.blue(`\nYou selected: ${selectedVariant}`));
+  console.log(chalk.blue(`\nYou selected file: ${selectedSpecFile}`));
+  console.log(chalk.blue(`You selected variant: ${selectedVariant}`));
 
-  // Step 5: Extract and print the setPageInteraction code for the selected variant
+  // Step 5: Extract and show existing setPageInteraction code
   const setPageInteractionCode = getSetPageInteractionCode(
     selectedSpecFile,
     selectedVariant
   );
-
   if (setPageInteractionCode) {
     console.log(
-      chalk.green(
-        '\nDefined setPageInteraction code for the selected variant:\n'
-      )
+      chalk.green('\nCurrent setPageInteraction code for this variant:\n')
     );
     console.log(chalk.white(setPageInteractionCode));
   } else {
-    console.log(chalk.yellow('No setPageInteraction code to display.'));
+    console.log(chalk.yellow('\nNo setPageInteraction code currently.\n'));
   }
 
-  // Step 6: Prompt for action - Override, Remove, or Do Nothing
+  // Step 6: Prompt for action
   const { actionChoice } = await inquirer.prompt([
     {
       type: 'list',
       name: 'actionChoice',
       message: 'What would you like to do with setPageInteraction?',
       choices: [
-        { name: 'Override setPageInteraction', value: 'override' },
+        { name: 'Generate new code via codegen + override setPageInteraction', value: 'override' },
         { name: 'Remove setPageInteraction', value: 'remove' },
         { name: 'Do Nothing', value: 'nothing' },
       ],
@@ -546,47 +434,69 @@ async function runTestManager() {
   ]);
 
   if (actionChoice === 'override') {
-    // Override the setPageInteraction with contents from ./pageInteraction
-    const pageInteractionPath = path.resolve(process.cwd(), 'pageInteraction');
-    if (!fs.existsSync(pageInteractionPath)) {
+    // Ask user for the URL to codegen
+    const { pageUrl } = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'pageUrl',
+        message: 'Enter the URL to run Playwright codegen:',
+        default: 'https://automationintesting.online',
+      },
+    ]);
+
+    // 1) Run codegen for the user-supplied URL and retrieve code
+    // 1) Run codegen for the user-supplied URL and retrieve code
+    let newInteractionCode;
+    try {
+      newInteractionCode = await codegenAndExtract(pageUrl);
       console.log(
-        chalk.red(
-          `The file ./pageInteraction does not exist at path: ${pageInteractionPath}`
-        )
+        chalk.green('\nPlaywright codegen completed. Extracted code:')
       );
+      console.log(chalk.white(newInteractionCode));
+    } catch (err) {
+      console.log(chalk.red('Failed to run codegen:'), err);
       return;
     }
-
-    const newInteractionCode = fs
-      .readFileSync(pageInteractionPath, 'utf-8')
-      .trim();
 
     if (!newInteractionCode) {
       console.log(
-        chalk.red(
-          'The ./pageInteraction file is empty. Please provide valid interaction code.'
-        )
+        chalk.red('No code was extracted. Aborting override.')
       );
       return;
     }
 
-    // Override the setPageInteraction in the selected spec file
+
+    // 2) Override the setPageInteraction in the selected spec file
     await overrideSetPageInteraction(
       selectedSpecFile,
       selectedVariant,
       newInteractionCode
     );
 
-    // Format the file with Prettier after overriding
+    // 3) Format the file with Prettier
     await formatFileWithPrettier(selectedSpecFile);
+
+    // 4) Print out the entire changed file
+    const changedFileContent = fs.readFileSync(selectedSpecFile, 'utf8');
+    console.log(chalk.magenta('\n=== Updated Test File Content ==='));
+    console.log(changedFileContent);
+    console.log(chalk.magenta('=== End of Test File ===\n'));
+
   } else if (actionChoice === 'remove') {
     // Remove the setPageInteraction for the selected variant
     await removeSetPageInteraction(selectedSpecFile, selectedVariant);
 
-    // Format the file with Prettier after removal
+    // Format the file with Prettier
     await formatFileWithPrettier(selectedSpecFile);
+
+    // Show the entire file again
+    const changedFileContent = fs.readFileSync(selectedSpecFile, 'utf8');
+    console.log(chalk.magenta('\n=== Updated Test File Content ==='));
+    console.log(changedFileContent);
+    console.log(chalk.magenta('=== End of Test File ===\n'));
+
   } else {
-    console.log(chalk.blue('No changes were made.'));
+    console.log(chalk.blue('No changes were made. Exiting.'));
   }
 
   console.log(chalk.green('\nTest Manager operation completed.'));
