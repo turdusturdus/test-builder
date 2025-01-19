@@ -16,8 +16,12 @@
     "@babel/traverse": "^7.26.5",
     "@babel/types": "^7.26.5",
     "@playwright/test": "^1.49.1",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
     "chalk": "^5.4.1",
     "inquirer": "^12.3.2",
-    "prettier": "^3.4.2"
+    "node-fetch": "^3.3.2",
+    "prettier": "^3.4.2",
+    "quicktype-core": "^23.0.170"
   }
 }

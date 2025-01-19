@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-//@ts-check
 import fs from 'fs';
 import path from 'path';
 import inquirer from 'inquirer';
