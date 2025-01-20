@@ -15,6 +15,9 @@ import * as t from '@babel/types';
 import prettier from 'prettier';
 import { codegenAndExtract } from './codegen.js';
 
+// *** ADDED: import Builder so we can read variant states ***
+import Builder from './screenshot-test-builder.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -131,7 +134,11 @@ function getSetPageInteractionCode(filePath, selectedVariant) {
 }
 
 // Revised Function to Override or Add setPageInteraction
-async function overrideSetPageInteraction(filePath, selectedVariant, newInteractionCode) {
+async function overrideSetPageInteraction(
+  filePath,
+  selectedVariant,
+  newInteractionCode
+) {
   const code = fs.readFileSync(filePath, 'utf-8');
   const ast = parser.parse(code, {
     sourceType: 'module',
@@ -263,7 +270,9 @@ async function overrideSetPageInteraction(filePath, selectedVariant, newInteract
   // Write back to the file
   fs.writeFileSync(filePath, output, 'utf-8');
   console.log(
-    chalk.green(`setPageInteraction for variant "${selectedVariant}" updated/added successfully.`)
+    chalk.green(
+      `setPageInteraction for variant "${selectedVariant}" updated/added successfully.`
+    )
   );
 }
 
@@ -310,11 +319,15 @@ async function removeSetPageInteraction(filePath, selectedVariant) {
 
   if (!variantFound) {
     console.log(
-      chalk.yellow(`No setPageInteraction found for variant "${selectedVariant}".`)
+      chalk.yellow(
+        `No setPageInteraction found for variant "${selectedVariant}".`
+      )
     );
   } else {
     console.log(
-      chalk.green(`setPageInteraction for variant "${selectedVariant}" removed successfully.`)
+      chalk.green(
+        `setPageInteraction for variant "${selectedVariant}" removed successfully.`
+      )
     );
   }
 
@@ -345,10 +358,14 @@ async function formatFileWithPrettier(filePath) {
     });
 
     await fs.promises.writeFile(filePath, formatted, 'utf-8');
-    console.log(chalk.green(`Formatted ${filePath} with Prettier successfully.`));
+    console.log(
+      chalk.green(`Formatted ${filePath} with Prettier successfully.`)
+    );
   } catch (error) {
     console.log(
-      chalk.red(`An error occurred while formatting ${filePath} with Prettier:`),
+      chalk.red(
+        `An error occurred while formatting ${filePath} with Prettier:`
+      ),
       error
     );
   }
@@ -360,7 +377,9 @@ async function runTestManager() {
   // Step 1: List all .spec.js files
   const testsDir = path.join(__dirname, 'tests');
   if (!fs.existsSync(testsDir)) {
-    console.log(chalk.red(`Tests directory does not exist at path: ${testsDir}`));
+    console.log(
+      chalk.red(`Tests directory does not exist at path: ${testsDir}`)
+    );
     return;
   }
 
@@ -425,7 +444,10 @@ async function runTestManager() {
       name: 'actionChoice',
       message: 'What would you like to do with setPageInteraction?',
       choices: [
-        { name: 'Generate new code via codegen + override setPageInteraction', value: 'override' },
+        {
+          name: 'Generate new code via codegen + override setPageInteraction',
+          value: 'override',
+        },
         { name: 'Remove setPageInteraction', value: 'remove' },
         { name: 'Do Nothing', value: 'nothing' },
       ],
@@ -434,18 +456,39 @@ async function runTestManager() {
   ]);
 
   if (actionChoice === 'override') {
-    // Ask user for the URL to codegen
+    // *** ADDED: import the spec to load the Builder state for that variant ***
+    process.env.SCREENSHOT_TEST_BUILDER_CLI = 'true';
+    try {
+      await import(path.resolve(selectedSpecFile));
+    } catch (err) {
+      console.log(chalk.red('Failed to import spec file in testManager:'), err);
+    }
+
+    // *** ADDED: find the builder’s state for the selected variant ***
+    let foundState = null;
+    for (const instance of Builder.__instances) {
+      const s = instance.getVariantState(selectedVariant);
+      if (s) {
+        foundState = s;
+        break;
+      }
+    }
+
+    // Use the route from the Builder state as default if present
+    const defaultUrl =
+      'https://automationintesting.online' + foundState?.pageRoute;
+
+    // 1) Ask user for the URL to run Playwright codegen, but default to our found route
     const { pageUrl } = await inquirer.prompt([
       {
         type: 'input',
         name: 'pageUrl',
         message: 'Enter the URL to run Playwright codegen:',
-        default: 'https://automationintesting.online',
+        default: defaultUrl,
       },
     ]);
 
-    // 1) Run codegen for the user-supplied URL and retrieve code
-    // 1) Run codegen for the user-supplied URL and retrieve code
+    // 2) Run codegen and retrieve code
     let newInteractionCode;
     try {
       newInteractionCode = await codegenAndExtract(pageUrl);
@@ -459,12 +502,9 @@ async function runTestManager() {
     }
 
     if (!newInteractionCode) {
-      console.log(
-        chalk.red('No code was extracted. Aborting override.')
-      );
+      console.log(chalk.red('No code was extracted. Aborting override.'));
       return;
     }
-
 
     // 2) Override the setPageInteraction in the selected spec file
     await overrideSetPageInteraction(
@@ -481,7 +521,6 @@ async function runTestManager() {
     console.log(chalk.magenta('\n=== Updated Test File Content ==='));
     console.log(changedFileContent);
     console.log(chalk.magenta('=== End of Test File ===\n'));
-
   } else if (actionChoice === 'remove') {
     // Remove the setPageInteraction for the selected variant
     await removeSetPageInteraction(selectedSpecFile, selectedVariant);
@@ -494,7 +533,6 @@ async function runTestManager() {
     console.log(chalk.magenta('\n=== Updated Test File Content ==='));
     console.log(changedFileContent);
     console.log(chalk.magenta('=== End of Test File ===\n'));
-
   } else {
     console.log(chalk.blue('No changes were made. Exiting.'));
   }
