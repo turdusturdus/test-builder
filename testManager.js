@@ -5,7 +5,7 @@ import path from 'path';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 import parser from '@babel/parser';
-import _traverse from '@babel/traverse'; // don't remove this comment and don't change the way traverse and generate is imported
+import _traverse from '@babel/traverse';
 const traverse = _traverse.default;
 import _generate from '@babel/generator';
 const generate = _generate.default;
@@ -17,6 +17,8 @@ import { codegenAndExtract } from './codegen.js';
 
 import Builder from './screenshot-test-builder.js';
 import config from './config.js';
+
+import Table from 'cli-table3';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -117,9 +119,6 @@ function getSetPageInteractionCode(filePath, selectedVariant) {
   if (interaction) {
     return interaction;
   } else {
-    console.log(
-      chalk.yellow('No setPageInteraction defined for this variant.')
-    );
     return null;
   }
 }
@@ -180,12 +179,6 @@ async function overrideSetPageInteraction(
   });
 
   if (!variantFound) {
-    console.log(
-      chalk.yellow(
-        `No setPageInteraction found for variant "${selectedVariant}". Adding a new one...`
-      )
-    );
-
     traverse(ast, {
       CallExpression(path) {
         const callee = path.node.callee;
@@ -239,17 +232,9 @@ async function overrideSetPageInteraction(
       ...prettierConfig,
       filepath: filePath,
     });
-    console.log(chalk.green('Code formatted with Prettier successfully.'));
-  } catch (error) {
-    console.log(chalk.red('Error while formatting with Prettier:'), error);
-  }
+  } catch (error) {}
 
   fs.writeFileSync(filePath, output, 'utf-8');
-  console.log(
-    chalk.green(
-      `setPageInteraction for variant "${selectedVariant}" updated/added successfully.`
-    )
-  );
 }
 
 async function removeSetPageInteraction(filePath, selectedVariant) {
@@ -290,31 +275,15 @@ async function removeSetPageInteraction(filePath, selectedVariant) {
     },
   });
 
-  if (!variantFound) {
-    console.log(
-      chalk.yellow(
-        `No setPageInteraction found for variant "${selectedVariant}".`
-      )
-    );
-  } else {
-    console.log(
-      chalk.green(
-        `setPageInteraction for variant "${selectedVariant}" removed successfully.`
-      )
-    );
-  }
-
   let output = generate(ast, {}, code).code;
+
   try {
     const prettierConfig = await prettier.resolveConfig(filePath);
     output = await prettier.format(output, {
       ...prettierConfig,
       filepath: filePath,
     });
-    console.log(chalk.green('Code formatted with Prettier successfully.'));
-  } catch (error) {
-    console.log(chalk.red('Error while formatting with Prettier:'), error);
-  }
+  } catch (error) {}
 
   fs.writeFileSync(filePath, output, 'utf-8');
 }
@@ -330,17 +299,7 @@ async function formatFileWithPrettier(filePath) {
     });
 
     await fs.promises.writeFile(filePath, formatted, 'utf-8');
-    console.log(
-      chalk.green(`Formatted ${filePath} with Prettier successfully.`)
-    );
-  } catch (error) {
-    console.log(
-      chalk.red(
-        `An error occurred while formatting ${filePath} with Prettier:`
-      ),
-      error
-    );
-  }
+  } catch (error) {}
 }
 
 async function runTestManager() {
@@ -391,18 +350,53 @@ async function runTestManager() {
   console.log(chalk.blue(`\nYou selected file: ${selectedSpecFile}`));
   console.log(chalk.blue(`You selected variant: ${selectedVariant}`));
 
+  let foundStateForDisplay = null;
+  try {
+    process.env.SCREENSHOT_TEST_BUILDER_CLI = 'true';
+    await import(path.resolve(selectedSpecFile));
+    for (const instance of Builder.__instances) {
+      const s = instance.getVariantState(selectedVariant);
+      if (s) {
+        foundStateForDisplay = s;
+        break;
+      }
+    }
+  } catch (err) {}
+
   const setPageInteractionCode = getSetPageInteractionCode(
     selectedSpecFile,
     selectedVariant
   );
-  if (setPageInteractionCode) {
-    console.log(
-      chalk.green('\nCurrent setPageInteraction code for this variant:\n')
-    );
-    console.log(chalk.white(setPageInteractionCode));
-  } else {
-    console.log(chalk.yellow('\nNo setPageInteraction code currently.\n'));
+
+  console.log(chalk.green('\nCurrent config for this variant:\n'));
+
+  const interactionData = foundStateForDisplay
+    ? {
+        ...foundStateForDisplay,
+        pageInteraction: setPageInteractionCode || 'Not defined',
+      }
+    : { pageInteraction: setPageInteractionCode || 'Not defined' };
+
+  const table = new Table({
+    head: ['Property', 'Value'],
+    colWidths: [25, 60],
+    wordWrap: true,
+  });
+
+  for (const [key, value] of Object.entries(interactionData)) {
+    let formattedValue;
+    if (Array.isArray(value)) {
+      formattedValue = value.join(', ');
+    } else if (typeof value === 'object' && value !== null) {
+      formattedValue = JSON.stringify(value, null, 2);
+    } else {
+      formattedValue = String(value);
+    }
+
+    table.push([chalk.cyan(key), formattedValue]);
   }
+
+  console.log(table.toString());
 
   const { actionChoice } = await inquirer.prompt([
     {
@@ -425,9 +419,7 @@ async function runTestManager() {
     process.env.SCREENSHOT_TEST_BUILDER_CLI = 'true';
     try {
       await import(path.resolve(selectedSpecFile));
-    } catch (err) {
-      console.log(chalk.red('Failed to import spec file in testManager:'), err);
-    }
+    } catch (err) {}
 
     let foundState = null;
     for (const instance of Builder.__instances) {
@@ -447,13 +439,9 @@ async function runTestManager() {
         chalk.green('\nPlaywright codegen completed. Extracted code:')
       );
       console.log(chalk.white(newInteractionCode));
-    } catch (err) {
-      console.log(chalk.red('Failed to run codegen:'), err);
-      return;
-    }
+    } catch (err) {}
 
     if (!newInteractionCode) {
-      console.log(chalk.red('No code was extracted. Aborting override.'));
       return;
     }
 
