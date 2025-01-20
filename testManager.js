@@ -15,14 +15,12 @@ import * as t from '@babel/types';
 import prettier from 'prettier';
 import { codegenAndExtract } from './codegen.js';
 
-// *** ADDED: import Builder so we can read variant states ***
 import Builder from './screenshot-test-builder.js';
 import config from './config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Helper function to get all .spec.js files recursively
 function getSpecFiles(dir, fileList = []) {
   const files = fs.readdirSync(dir);
   files.forEach((file) => {
@@ -37,7 +35,6 @@ function getSpecFiles(dir, fileList = []) {
   return fileList;
 }
 
-// Helper function to extract test variants from a spec file
 function getTestVariants(filePath) {
   const code = fs.readFileSync(filePath, 'utf-8');
   const ast = parser.parse(code, {
@@ -63,10 +60,9 @@ function getTestVariants(filePath) {
     },
   });
 
-  return [...new Set(variants)]; // Remove duplicates
+  return [...new Set(variants)];
 }
 
-// Function to extract setPageInteraction code for a specific variant
 function getSetPageInteractionCode(filePath, selectedVariant) {
   const code = fs.readFileSync(filePath, 'utf-8');
   const ast = parser.parse(code, {
@@ -75,18 +71,16 @@ function getSetPageInteractionCode(filePath, selectedVariant) {
   });
 
   const variantToInteraction = {};
-  let currentVariant = 'main'; // Default variant
+  let currentVariant = 'main';
 
   traverse(ast, {
     CallExpression(path) {
       const callee = path.node.callee;
 
-      // Handle chained method calls
       if (callee.type === 'MemberExpression') {
         const methodName = callee.property.name;
 
         if (methodName === 'test') {
-          // Extract variant name
           const args = path.node.arguments;
           if (args.length > 0 && args[0].type === 'StringLiteral') {
             currentVariant = args[0].value;
@@ -96,7 +90,6 @@ function getSetPageInteractionCode(filePath, selectedVariant) {
         }
 
         if (methodName === 'setPageInteraction') {
-          // Extract the interaction function
           const interactionArg = path.node.arguments[0];
           if (
             interactionArg &&
@@ -106,12 +99,10 @@ function getSetPageInteractionCode(filePath, selectedVariant) {
             let interactionCode = '';
 
             if (interactionArg.body.type === 'BlockStatement') {
-              // Multiple statements
               interactionCode = interactionArg.body.body
                 .map((stmt) => generate(stmt).code)
                 .join('\n');
             } else {
-              // Single expression
               interactionCode = generate(interactionArg.body).code;
             }
 
@@ -122,7 +113,6 @@ function getSetPageInteractionCode(filePath, selectedVariant) {
     },
   });
 
-  // Now, retrieve the interaction for the selected variant
   const interaction = variantToInteraction[selectedVariant];
   if (interaction) {
     return interaction;
@@ -134,7 +124,6 @@ function getSetPageInteractionCode(filePath, selectedVariant) {
   }
 }
 
-// Revised Function to Override or Add setPageInteraction
 async function overrideSetPageInteraction(
   filePath,
   selectedVariant,
@@ -147,18 +136,16 @@ async function overrideSetPageInteraction(
   });
 
   let variantFound = false;
-  let currentVariant = 'main'; // Initialize currentVariant
+  let currentVariant = 'main';
 
   traverse(ast, {
     CallExpression(path) {
       const callee = path.node.callee;
 
-      // Handle chained method calls
       if (callee.type === 'MemberExpression') {
         const methodName = callee.property.name;
 
         if (methodName === 'test') {
-          // Extract variant name
           const args = path.node.arguments;
           if (args.length > 0 && args[0].type === 'StringLiteral') {
             currentVariant = args[0].value;
@@ -168,15 +155,12 @@ async function overrideSetPageInteraction(
         }
 
         if (methodName === 'setPageInteraction') {
-          // Check if current variant matches
           if (currentVariant === selectedVariant) {
-            // Parse only the Arrow Function Body
             const functionAst = parser.parse(
               `async (page) => { ${newInteractionCode} }`,
               { sourceType: 'module' }
             ).program.body[0].expression;
 
-            // Programmatically build the .setPageInteraction(...) call
             const newCallExpression = t.callExpression(
               t.memberExpression(
                 callee.object,
@@ -185,7 +169,6 @@ async function overrideSetPageInteraction(
               [functionAst]
             );
 
-            // Replace the existing setPageInteraction call
             path.replaceWith(newCallExpression);
 
             variantFound = true;
@@ -203,7 +186,6 @@ async function overrideSetPageInteraction(
       )
     );
 
-    // If the test with this variant exists but .setPageInteraction doesn't:
     traverse(ast, {
       CallExpression(path) {
         const callee = path.node.callee;
@@ -221,18 +203,15 @@ async function overrideSetPageInteraction(
               variantName = args[0].value;
             }
 
-            // Check if the current test() corresponds to the selectedVariant
             if (
               (selectedVariant === 'main' && args.length === 0) ||
               args[0].value === selectedVariant
             ) {
-              // Parse only the Arrow Function Body
               const functionAst = parser.parse(
                 `async (page) => { ${newInteractionCode} }`,
                 { sourceType: 'module' }
               ).program.body[0].expression;
 
-              // Programmatically build the .setPageInteraction(...) call
               const setPageInteractionCall = t.callExpression(
                 t.memberExpression(
                   callee.object,
@@ -241,7 +220,6 @@ async function overrideSetPageInteraction(
                 [functionAst]
               );
 
-              // Insert .setPageInteraction(...) into the chain
               path.node.callee.object = setPageInteractionCall;
 
               variantFound = true;
@@ -253,10 +231,8 @@ async function overrideSetPageInteraction(
     });
   }
 
-  // Generate the modified code
   let output = generate(ast, {}, code).code;
 
-  // Format the code with Prettier before writing
   try {
     const prettierConfig = await prettier.resolveConfig(filePath);
     output = await prettier.format(output, {
@@ -268,7 +244,6 @@ async function overrideSetPageInteraction(
     console.log(chalk.red('Error while formatting with Prettier:'), error);
   }
 
-  // Write back to the file
   fs.writeFileSync(filePath, output, 'utf-8');
   console.log(
     chalk.green(
@@ -277,9 +252,6 @@ async function overrideSetPageInteraction(
   );
 }
 
-/**
- * Removes the setPageInteraction for a specific test variant.
- */
 async function removeSetPageInteraction(filePath, selectedVariant) {
   const code = fs.readFileSync(filePath, 'utf-8');
   const ast = parser.parse(code, {
@@ -347,7 +319,6 @@ async function removeSetPageInteraction(filePath, selectedVariant) {
   fs.writeFileSync(filePath, output, 'utf-8');
 }
 
-// Utility function to format a file with Prettier
 async function formatFileWithPrettier(filePath) {
   try {
     const fileContent = await fs.promises.readFile(filePath, 'utf-8');
@@ -375,7 +346,6 @@ async function formatFileWithPrettier(filePath) {
 async function runTestManager() {
   console.log(chalk.green('Welcome to testManager CLI!\n'));
 
-  // Step 1: List all .spec.js files
   const testsDir = path.join(__dirname, 'tests');
   if (!fs.existsSync(testsDir)) {
     console.log(
@@ -394,7 +364,6 @@ async function runTestManager() {
     path.relative(process.cwd(), file)
   );
 
-  // Step 2: Prompt the user to select a spec file
   const { selectedSpecFile } = await inquirer.prompt([
     {
       type: 'list',
@@ -404,14 +373,12 @@ async function runTestManager() {
     },
   ]);
 
-  // Step 3: Extract test variants from the selected file
   const testVariants = getTestVariants(selectedSpecFile);
   if (testVariants.length === 0) {
     console.log(chalk.yellow('No test variants found.'));
     return;
   }
 
-  // Step 4: Prompt the user to select a test variant
   const { selectedVariant } = await inquirer.prompt([
     {
       type: 'list',
@@ -424,7 +391,6 @@ async function runTestManager() {
   console.log(chalk.blue(`\nYou selected file: ${selectedSpecFile}`));
   console.log(chalk.blue(`You selected variant: ${selectedVariant}`));
 
-  // Step 5: Extract and show existing setPageInteraction code
   const setPageInteractionCode = getSetPageInteractionCode(
     selectedSpecFile,
     selectedVariant
@@ -438,7 +404,6 @@ async function runTestManager() {
     console.log(chalk.yellow('\nNo setPageInteraction code currently.\n'));
   }
 
-  // Step 6: Prompt for action
   const { actionChoice } = await inquirer.prompt([
     {
       type: 'list',
@@ -457,7 +422,6 @@ async function runTestManager() {
   ]);
 
   if (actionChoice === 'override') {
-    // *** ADDED: import the spec to load the Builder state for that variant ***
     process.env.SCREENSHOT_TEST_BUILDER_CLI = 'true';
     try {
       await import(path.resolve(selectedSpecFile));
@@ -465,7 +429,6 @@ async function runTestManager() {
       console.log(chalk.red('Failed to import spec file in testManager:'), err);
     }
 
-    // *** ADDED: find the builder’s state for the selected variant ***
     let foundState = null;
     for (const instance of Builder.__instances) {
       const s = instance.getVariantState(selectedVariant);
@@ -475,10 +438,8 @@ async function runTestManager() {
       }
     }
 
-    // Use the route from the Builder state as default if present
     const pageUrl = config.basePageUrl + foundState?.pageRoute;
 
-    // 2) Run codegen and retrieve code
     let newInteractionCode;
     try {
       newInteractionCode = await codegenAndExtract(pageUrl);
@@ -496,29 +457,23 @@ async function runTestManager() {
       return;
     }
 
-    // 2) Override the setPageInteraction in the selected spec file
     await overrideSetPageInteraction(
       selectedSpecFile,
       selectedVariant,
       newInteractionCode
     );
 
-    // 3) Format the file with Prettier
     await formatFileWithPrettier(selectedSpecFile);
 
-    // 4) Print out the entire changed file
     const changedFileContent = fs.readFileSync(selectedSpecFile, 'utf8');
     console.log(chalk.magenta('\n=== Updated Test File Content ==='));
     console.log(changedFileContent);
     console.log(chalk.magenta('=== End of Test File ===\n'));
   } else if (actionChoice === 'remove') {
-    // Remove the setPageInteraction for the selected variant
     await removeSetPageInteraction(selectedSpecFile, selectedVariant);
 
-    // Format the file with Prettier
     await formatFileWithPrettier(selectedSpecFile);
 
-    // Show the entire file again
     const changedFileContent = fs.readFileSync(selectedSpecFile, 'utf8');
     console.log(chalk.magenta('\n=== Updated Test File Content ==='));
     console.log(changedFileContent);

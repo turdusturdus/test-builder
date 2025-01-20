@@ -1,16 +1,12 @@
-// screenshot-test-builder.js
-
 import { test as t, expect } from '@playwright/test';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import config from './config.js';
 
-// Determine the current file path
 const __filename = fileURLToPath(import.meta.url);
 const resolvedScriptPath = path.resolve(process.argv[1]);
 
 class Builder {
-  // We'll keep track of all Builder instances so we can inspect them later from CLI:
   static __instances = [];
 
   #pageRoute = null;
@@ -22,11 +18,9 @@ class Builder {
   #onlyThis = false;
   #pageInteraction = null;
 
-  // Keep the state used for each test variant
   #variantsState = {};
 
   constructor() {
-    // Push this instance into the static array
     Builder.__instances.push(this);
   }
 
@@ -138,7 +132,6 @@ class Builder {
       }
     }
 
-    // Always collect the state regardless of mode
     const usedVariantName = variantName || 'main';
     this.#variantsState[usedVariantName] = this.exportState();
 
@@ -167,11 +160,9 @@ class Builder {
   }
 
   #resetState() {
-    // This is part of the existing logic. We do not remove or alter it.
     this.#pageInteraction = null;
   }
 
-  // Exports a snapshot of the current fields, stringifying any functions
   exportState() {
     return {
       pageRoute: this.#pageRoute,
@@ -187,14 +178,12 @@ class Builder {
     };
   }
 
-  // For external code (CLI block), get the variant’s final saved state
   getVariantState(variantName) {
     const nameOrDefault = variantName || 'main';
     return this.#variantsState[nameOrDefault] || null;
   }
 }
 
-// Simulate the original function that loads mock data
 async function getMockDataFor(id) {
   const data = await import(`./mock-api/${id}/${id}.mock.js`);
   return data;
@@ -202,20 +191,9 @@ async function getMockDataFor(id) {
 
 export default Builder;
 
-/**
- * CLI usage:
- *   node screenshot-test-builder.js path/to/spec.js someVariant --state
- *
- * This will:
- *   - Import the spec file, which creates and configures the builder(s).
- *   - Then look for a builder that has the named variant’s state and print it.
- */
 if (__filename === resolvedScriptPath) {
   (async () => {
     const [, , specFile, variantArg, maybeStateFlag] = process.argv;
-
-    // We expect something like:
-    //   node screenshot-test-builder.js tests/home/home.spec.js bookings --state
 
     if (maybeStateFlag === '--state') {
       if (!specFile) {
@@ -223,18 +201,15 @@ if (__filename === resolvedScriptPath) {
         process.exit(1);
       }
 
-      // Set environment variable before importing the spec file
       process.env.SCREENSHOT_TEST_BUILDER_CLI = 'true';
 
       try {
-        // Dynamically import the test spec so it runs all builder code
         await import(path.resolve(specFile));
       } catch (err) {
         console.error('Failed to import spec file:', err);
         process.exit(1);
       }
 
-      // Now that the spec file has run, we can see if any builder had the variant
       let found = null;
       for (const instance of Builder.__instances) {
         const s = instance.getVariantState(variantArg);
@@ -253,7 +228,6 @@ if (__filename === resolvedScriptPath) {
         process.exit(1);
       }
 
-      // Print it nicely
       console.log(JSON.stringify(found, null, 2));
       process.exit(0);
     }
