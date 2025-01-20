@@ -1,4 +1,13 @@
+// screenshot-test-builder.js
+
 import { test as t, expect } from '@playwright/test';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+// Determine the current file path
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const resolvedScriptPath = path.resolve(process.argv[1]);
 
 const customDarkCSS = `
     body {
@@ -7,6 +16,9 @@ const customDarkCSS = `
 `;
 
 class Builder {
+  // We'll keep track of all Builder instances so we can inspect them later from CLI:
+  static __instances = [];
+
   #pageRoute = null;
   #viewName = null;
   #viewport = ['desktop', 'mobile'];
@@ -24,6 +36,14 @@ class Builder {
   #customDarkCSS = customDarkCSS;
   #onlyThis = false;
   #pageInteraction = null;
+
+  // Keep the state used for each test variant
+  #variantsState = {};
+
+  constructor() {
+    // Push this instance into the static array
+    Builder.__instances.push(this);
+  }
 
   only() {
     this.#onlyThis = true;
@@ -77,9 +97,7 @@ class Builder {
       apiUrl,
     } of mockApiPresets.default) {
       await page.route(
-        `${
-          apiUrl || 'https://automationintesting.online'
-        }/${endpoint}${customQuery}`,
+        `${apiUrl || 'https://automationintesting.online'}/${endpoint}${customQuery}`,
         async (route) => {
           if (contentType === 'text/html') {
             await route.fulfill({
@@ -101,32 +119,46 @@ class Builder {
 
   test(variantName) {
     if (!this.#pageRoute) throw new Error('Page route is not set');
-    const testFunction = this.#onlyThis ? t.only : t;
-    const testCases = variantName ? [variantName] : [null];
-    const testState = {
-      pageInteraction: this.#pageInteraction,
-    };
 
-    for (const viewPort of this.#viewport) {
-      for (const colorScheme of this.#colorSchemes) {
-        for (const variant of testCases) {
-          testFunction(
-            this.#getTestDescription(viewPort, colorScheme, variant),
-            async ({ page }) => {
-              await this.#mockApiCall(page);
-              await this.#setViewportFor(viewPort, page);
-              await this.#setColorScheme(colorScheme, page);
-              await page.goto(this.#pageRoute);
-              await testState.pageInteraction?.(page);
-              await expect(page).toHaveScreenshot(
-                this.#getReferenceFileFor(viewPort, colorScheme, variant),
-                { fullPage: true }
-              );
-            }
-          );
+    const isCli = process.env.SCREENSHOT_TEST_BUILDER_CLI === 'true';
+
+    if (!isCli) {
+      const testFunction = this.#onlyThis ? t.only : t;
+
+      // If no variantName is passed, store it under 'default'
+      const usedVariantName = variantName || 'default';
+
+      const testCases = variantName ? [variantName] : [null];
+      const testState = {
+        pageInteraction: this.#pageInteraction,
+      };
+
+      for (const viewPort of this.#viewport) {
+        for (const colorScheme of this.#colorSchemes) {
+          for (const variant of testCases) {
+            testFunction(
+              this.#getTestDescription(viewPort, colorScheme, variant),
+              async ({ page }) => {
+                await this.#mockApiCall(page);
+                await this.#setViewportFor(viewPort, page);
+                await this.#setColorScheme(colorScheme, page);
+                await page.goto(this.#pageRoute);
+                await testState.pageInteraction?.(page);
+
+                await expect(page).toHaveScreenshot(
+                  this.#getReferenceFileFor(viewPort, colorScheme, variant),
+                  { fullPage: true }
+                );
+              }
+            );
+          }
         }
       }
     }
+
+    // Always collect the state regardless of mode
+    const usedVariantName = variantName || 'default';
+    this.#variantsState[usedVariantName] = this.exportState();
 
     this.#resetState();
     return this;
@@ -153,13 +185,95 @@ class Builder {
   }
 
   #resetState() {
+    // This is part of the existing logic. We do not remove or alter it.
     this.#pageInteraction = null;
+  }
+
+  // Exports a snapshot of the current fields, stringifying any functions
+  exportState() {
+    return {
+      pageRoute: this.#pageRoute,
+      viewName: this.#viewName,
+      viewport: this.#viewport,
+      colorSchemes: this.#colorSchemes,
+      viewPortResolution: this.#viewPortResolution,
+      customDarkCSS: this.#customDarkCSS,
+      onlyThis: this.#onlyThis,
+      pageInteraction: this.#pageInteraction
+        ? this.#pageInteraction.toString()
+        : null,
+    };
+  }
+
+  // For external code (CLI block), get the variant’s final saved state
+  getVariantState(variantName) {
+    const nameOrDefault = variantName || 'default';
+    return this.#variantsState[nameOrDefault] || null;
   }
 }
 
+// Simulate the original function that loads mock data
 async function getMockDataFor(id) {
   const data = await import(`./mock-api/${id}/${id}.mock.js`);
   return data;
 }
 
 export default Builder;
+
+/**
+ * CLI usage:
+ *   node screenshot-test-builder.js path/to/spec.js someVariant --state
+ *
+ * This will:
+ *   - Import the spec file, which creates and configures the builder(s).
+ *   - Then look for a builder that has the named variant’s state and print it.
+ */
+if (__filename === resolvedScriptPath) {
+  (async () => {
+    const [, , specFile, variantArg, maybeStateFlag] = process.argv;
+
+    // We expect something like:
+    //   node screenshot-test-builder.js tests/home/home.spec.js bookings --state
+
+    if (maybeStateFlag === '--state') {
+      if (!specFile) {
+        console.error('No spec file provided.');
+        process.exit(1);
+      }
+
+      // Set environment variable before importing the spec file
+      process.env.SCREENSHOT_TEST_BUILDER_CLI = 'true';
+
+      try {
+        // Dynamically import the test spec so it runs all builder code
+        await import(path.resolve(specFile));
+      } catch (err) {
+        console.error('Failed to import spec file:', err);
+        process.exit(1);
+      }
+
+      // Now that the spec file has run, we can see if any builder had the variant
+      let found = null;
+      for (const instance of Builder.__instances) {
+        const s = instance.getVariantState(variantArg);
+        if (s) {
+          found = s;
+          break;
+        }
+      }
+
+      if (!found) {
+        console.error(
+          `No state found for variant "${
+            variantArg || 'default'
+          }" in file: ${specFile}`
+        );
+        process.exit(1);
+      }
+
+      // Print it nicely
+      console.log(JSON.stringify(found, null, 2));
+      process.exit(0);
+    }
+  })();
+}
