@@ -3,17 +3,11 @@
 import { test as t, expect } from '@playwright/test';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import config from './config.js';
 
 // Determine the current file path
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const resolvedScriptPath = path.resolve(process.argv[1]);
-
-const customDarkCSS = `
-    body {
-        background: grey;
-    }
-`;
 
 class Builder {
   // We'll keep track of all Builder instances so we can inspect them later from CLI:
@@ -23,17 +17,8 @@ class Builder {
   #viewName = null;
   #viewport = ['desktop', 'mobile'];
   #colorSchemes = ['light', 'dark'];
-  #viewPortResolution = {
-    desktop: {
-      width: 1396,
-      height: 480,
-    },
-    mobile: {
-      width: 600,
-      height: 480,
-    },
-  };
-  #customDarkCSS = customDarkCSS;
+  #viewPortResolution = config.defaultViewPortResolution;
+  #customDarkCSS = config.defaultCustomDarkCSS;
   #onlyThis = false;
   #pageInteraction = null;
 
@@ -97,7 +82,7 @@ class Builder {
       apiUrl,
     } of mockApiPresets.default) {
       await page.route(
-        `${apiUrl || 'https://automationintesting.online'}/${endpoint}${customQuery}`,
+        `${apiUrl || config.baseApiUrl}/${endpoint}${customQuery}`,
         async (route) => {
           if (contentType === 'text/html') {
             await route.fulfill({

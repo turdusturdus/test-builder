@@ -17,6 +17,7 @@ import { codegenAndExtract } from './codegen.js';
 
 // *** ADDED: import Builder so we can read variant states ***
 import Builder from './screenshot-test-builder.js';
+import config from './config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -475,18 +476,7 @@ async function runTestManager() {
     }
 
     // Use the route from the Builder state as default if present
-    const defaultUrl =
-      'https://automationintesting.online' + foundState?.pageRoute;
-
-    // 1) Ask user for the URL to run Playwright codegen, but default to our found route
-    const { pageUrl } = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'pageUrl',
-        message: 'Enter the URL to run Playwright codegen:',
-        default: defaultUrl,
-      },
-    ]);
+    const pageUrl = config.basePageUrl + foundState?.pageRoute;
 
     // 2) Run codegen and retrieve code
     let newInteractionCode;

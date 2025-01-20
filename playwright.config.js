@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import config from './config.js';
 
 export default defineConfig({
   testDir: './tests',
@@ -7,7 +8,7 @@ export default defineConfig({
 
   reporter: 'html',
   use: {
-    baseURL: 'https://automationintesting.online',
+    baseURL: config.basePageUrl,
     trace: 'on-first-retry',
   },
   projects: [
