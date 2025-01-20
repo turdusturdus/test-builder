@@ -125,9 +125,6 @@ class Builder {
     if (!isCli) {
       const testFunction = this.#onlyThis ? t.only : t;
 
-      // If no variantName is passed, store it under 'default'
-      const usedVariantName = variantName || 'default';
-
       const testCases = variantName ? [variantName] : [null];
       const testState = {
         pageInteraction: this.#pageInteraction,
@@ -157,7 +154,7 @@ class Builder {
     }
 
     // Always collect the state regardless of mode
-    const usedVariantName = variantName || 'default';
+    const usedVariantName = variantName || 'main';
     this.#variantsState[usedVariantName] = this.exportState();
 
     this.#resetState();
@@ -207,7 +204,7 @@ class Builder {
 
   // For external code (CLI block), get the variant’s final saved state
   getVariantState(variantName) {
-    const nameOrDefault = variantName || 'default';
+    const nameOrDefault = variantName || 'main';
     return this.#variantsState[nameOrDefault] || null;
   }
 }
@@ -265,7 +262,7 @@ if (__filename === resolvedScriptPath) {
       if (!found) {
         console.error(
           `No state found for variant "${
-            variantArg || 'default'
+            variantArg || 'main'
           }" in file: ${specFile}`
         );
         process.exit(1);
