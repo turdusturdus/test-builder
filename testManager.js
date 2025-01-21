@@ -302,53 +302,8 @@ async function formatFileWithPrettier(filePath) {
   } catch (error) {}
 }
 
-async function runTestManager() {
-  console.log(chalk.green('Welcome to testManager CLI!\n'));
-
-  const testsDir = path.join(__dirname, 'tests');
-  if (!fs.existsSync(testsDir)) {
-    console.log(
-      chalk.red(`Tests directory does not exist at path: ${testsDir}`)
-    );
-    return;
-  }
-
-  const specFiles = getSpecFiles(testsDir);
-  if (specFiles.length === 0) {
-    console.log(chalk.red('No .spec.js files found.'));
-    return;
-  }
-
-  const relativeSpecFiles = specFiles.map((file) =>
-    path.relative(process.cwd(), file)
-  );
-
-  const { selectedSpecFile } = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'selectedSpecFile',
-      message: 'Select a test file:',
-      choices: relativeSpecFiles,
-    },
-  ]);
-
-  const testVariants = getTestVariants(selectedSpecFile);
-  if (testVariants.length === 0) {
-    console.log(chalk.yellow('No test variants found.'));
-    return;
-  }
-
-  const { selectedVariant } = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'selectedVariant',
-      message: 'Select a test variant:',
-      choices: testVariants,
-    },
-  ]);
-
-  console.log(chalk.blue(`\nYou selected file: ${selectedSpecFile}`));
-  console.log(chalk.blue(`You selected variant: ${selectedVariant}`));
+async function displayConfigTable(selectedSpecFile, selectedVariant) {
+  console.clear();
 
   let foundStateForDisplay = null;
   try {
@@ -368,7 +323,7 @@ async function runTestManager() {
     selectedVariant
   );
 
-  console.log(chalk.green('\nCurrent config for this variant:\n'));
+  console.log(chalk.green('Current config for this variant:\n'));
 
   const interactionData = foundStateForDisplay
     ? {
@@ -397,77 +352,155 @@ async function runTestManager() {
   }
 
   console.log(table.toString());
+}
 
-  const { actionChoice } = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'actionChoice',
-      message: 'What would you like to do with setPageInteraction?',
-      choices: [
-        {
-          name: 'Generate new code via codegen + override setPageInteraction',
-          value: 'override',
-        },
-        { name: 'Remove setPageInteraction', value: 'remove' },
-        { name: 'Do Nothing', value: 'nothing' },
-      ],
-      default: 'nothing',
-    },
-  ]);
+async function runTestManager() {
+  console.log(chalk.green('Welcome to testManager CLI!\n'));
 
-  if (actionChoice === 'override') {
-    process.env.SCREENSHOT_TEST_BUILDER_CLI = 'true';
-    try {
-      await import(path.resolve(selectedSpecFile));
-    } catch (err) {}
-
-    let foundState = null;
-    for (const instance of Builder.__instances) {
-      const s = instance.getVariantState(selectedVariant);
-      if (s) {
-        foundState = s;
-        break;
-      }
-    }
-
-    const pageUrl = config.basePageUrl + foundState?.pageRoute;
-
-    let newInteractionCode;
-    try {
-      newInteractionCode = await codegenAndExtract(pageUrl);
+  while (true) {
+    const testsDir = path.join(__dirname, 'tests');
+    if (!fs.existsSync(testsDir)) {
       console.log(
-        chalk.green('\nPlaywright codegen completed. Extracted code:')
+        chalk.red(`Tests directory does not exist at path: ${testsDir}`)
       );
-      console.log(chalk.white(newInteractionCode));
-    } catch (err) {}
-
-    if (!newInteractionCode) {
-      return;
+      break;
     }
 
-    await overrideSetPageInteraction(
-      selectedSpecFile,
-      selectedVariant,
-      newInteractionCode
+    const specFiles = getSpecFiles(testsDir);
+    if (specFiles.length === 0) {
+      console.log(chalk.red('No .spec.js files found.'));
+      break;
+    }
+
+    const relativeSpecFiles = specFiles.map((file) =>
+      path.relative(process.cwd(), file)
     );
 
-    await formatFileWithPrettier(selectedSpecFile);
+    const { selectedSpecFile } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'selectedSpecFile',
+        message: 'Select a test file:',
+        choices: [...relativeSpecFiles, new inquirer.Separator(), 'Exit'],
+      },
+    ]);
 
-    const changedFileContent = fs.readFileSync(selectedSpecFile, 'utf8');
-    console.log(chalk.magenta('\n=== Updated Test File Content ==='));
-    console.log(changedFileContent);
-    console.log(chalk.magenta('=== End of Test File ===\n'));
-  } else if (actionChoice === 'remove') {
-    await removeSetPageInteraction(selectedSpecFile, selectedVariant);
+    if (selectedSpecFile === 'Exit') {
+      console.log(chalk.blue('Exiting Test Manager.'));
+      break;
+    }
 
-    await formatFileWithPrettier(selectedSpecFile);
+    const testVariants = getTestVariants(selectedSpecFile);
+    if (testVariants.length === 0) {
+      console.log(chalk.yellow('No test variants found.'));
+      continue;
+    }
 
-    const changedFileContent = fs.readFileSync(selectedSpecFile, 'utf8');
-    console.log(chalk.magenta('\n=== Updated Test File Content ==='));
-    console.log(changedFileContent);
-    console.log(chalk.magenta('=== End of Test File ===\n'));
-  } else {
-    console.log(chalk.blue('No changes were made. Exiting.'));
+    const { selectedVariant } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'selectedVariant',
+        message: 'Select a test variant:',
+        choices: [
+          ...testVariants,
+          new inquirer.Separator(),
+          'Back to file selection',
+        ],
+      },
+    ]);
+
+    if (selectedVariant === 'Back to file selection') {
+      continue;
+    }
+
+    console.log(chalk.blue(`\nYou selected file: ${selectedSpecFile}`));
+    console.log(chalk.blue(`You selected variant: ${selectedVariant}`));
+
+    await displayConfigTable(selectedSpecFile, selectedVariant);
+
+    const { actionChoice } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'actionChoice',
+        message: 'What would you like to do with setPageInteraction?',
+        choices: [
+          {
+            name: 'Generate new code via codegen + override setPageInteraction',
+            value: 'override',
+          },
+          { name: 'Remove setPageInteraction', value: 'remove' },
+          { name: 'Back to variant selection', value: 'back' },
+          { name: 'Exit', value: 'exit' },
+        ],
+        default: 'back',
+      },
+    ]);
+
+    if (actionChoice === 'override') {
+      process.env.SCREENSHOT_TEST_BUILDER_CLI = 'true';
+      try {
+        await import(path.resolve(selectedSpecFile));
+      } catch (err) {}
+
+      let foundState = null;
+      for (const instance of Builder.__instances) {
+        const s = instance.getVariantState(selectedVariant);
+        if (s) {
+          foundState = s;
+          break;
+        }
+      }
+
+      const pageUrl = config.basePageUrl + foundState?.pageRoute;
+
+      let newInteractionCode;
+      try {
+        newInteractionCode = await codegenAndExtract(pageUrl);
+        console.log(
+          chalk.green('\nPlaywright codegen completed. Extracted code:')
+        );
+        console.log(chalk.white(newInteractionCode));
+      } catch (err) {}
+
+      if (!newInteractionCode) {
+        continue;
+      }
+
+      await overrideSetPageInteraction(
+        selectedSpecFile,
+        selectedVariant,
+        newInteractionCode
+      );
+
+      await formatFileWithPrettier(selectedSpecFile);
+
+      await displayConfigTable(selectedSpecFile, selectedVariant);
+    } else if (actionChoice === 'remove') {
+      await removeSetPageInteraction(selectedSpecFile, selectedVariant);
+
+      await formatFileWithPrettier(selectedSpecFile);
+
+      await displayConfigTable(selectedSpecFile, selectedVariant);
+    } else if (actionChoice === 'back') {
+      continue;
+    } else if (actionChoice === 'exit') {
+      console.log(chalk.blue('Exiting Test Manager.'));
+      break;
+    }
+
+    const { continueChoice } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'continueChoice',
+        message: 'Would you like to perform another operation?',
+        default: true,
+      },
+    ]);
+
+    if (!continueChoice) {
+      console.log(chalk.blue('Exiting Test Manager.'));
+      break;
+    }
   }
 
   console.log(chalk.green('\nTest Manager operation completed.'));
