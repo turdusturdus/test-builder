@@ -13,7 +13,7 @@ import { dirname } from 'path';
 import * as t from '@babel/types';
 import prettier from 'prettier';
 import { codegenAndExtract } from './codegen.js';
-import Builder from './screenshot-test-builder.js';
+import Builder from './screenshotTestBuilder.js';
 import config from './config.js';
 import Table from 'cli-table3';
 const __filename = fileURLToPath(import.meta.url);

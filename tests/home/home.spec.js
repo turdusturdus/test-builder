@@ -1,5 +1,5 @@
 //@ts-check
-import ScreenshotTest from '../../screenshot-test-builder.js';
+import ScreenshotTest from '../../screenshotTestBuilder.js';
 
 new ScreenshotTest()
   .forPage('/', 'home')
