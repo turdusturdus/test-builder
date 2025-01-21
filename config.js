@@ -1,5 +1,3 @@
-// shared-config.js
-
 export const basePageUrl = 'https://automationintesting.online';
 export const baseApiUrl = 'https://automationintesting.online'; // or wherever your API lives
 export const defaultCustomDarkCSS = `
@@ -18,7 +16,6 @@ export const defaultViewPortResolution = {
   },
 };
 
-// Optionally, export as a default object if you prefer importing a single config object:
 export default {
   basePageUrl,
   baseApiUrl,
