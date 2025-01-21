@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 import fs from 'fs';
 import path from 'path';
 import inquirer from 'inquirer';
@@ -14,12 +13,9 @@ import { dirname } from 'path';
 import * as t from '@babel/types';
 import prettier from 'prettier';
 import { codegenAndExtract } from './codegen.js';
-
 import Builder from './screenshot-test-builder.js';
 import config from './config.js';
-
 import Table from 'cli-table3';
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -410,6 +406,7 @@ async function runTestManager() {
     ]);
 
     if (selectedVariant === 'Back to file selection') {
+      console.clear();
       continue;
     }
 
@@ -482,6 +479,7 @@ async function runTestManager() {
 
       await displayConfigTable(selectedSpecFile, selectedVariant);
     } else if (actionChoice === 'back') {
+      console.clear();
       continue;
     } else if (actionChoice === 'exit') {
       console.log(chalk.blue('Exiting Test Manager.'));
