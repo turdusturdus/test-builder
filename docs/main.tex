@@ -1,11 +1,13 @@
 \documentclass[12pt]{report}
-\usepackage[T1]{fontenc} % Obsługa polskich znaków
+\usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage[polish]{babel}
 \usepackage{geometry}
 \geometry{a4paper, margin=1in}
-\usepackage{tocbibind} % Dodaje spis treści do spisu treści
-\usepackage{hyperref} % Pakiet do obsługi linków
+\usepackage{tocbibind}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{float}
 
 \title{Narzędzie wspierające tworzenie testów dla aplikacji webowych}
 \author{
@@ -321,11 +323,61 @@ Kolejnym sposobem automatycznego tworzenia skryptów testowych jest \emph{Model-
 
 Podejście MBT jest szczególnie atrakcyjne w większych, długoterminowych projektach, gdzie sprawne utrzymanie pełnej dokumentacji i testów ma kluczowe znaczenie.
 
-\chapter{Architektura oraz interfejs aplikacji}
-{W tym rozdziale opiszesz konstrukcję swojego narzędzia, jego moduły, sposób komunikacji itp.}
+\chapter{Strategie generowania testów}
+\label{chap:strategie-generacji}
 
-\section{Ogólny zarys architektury}
-{Zwięźle opisz główne moduły aplikacji (np. moduł generowania testów, moduł interfejsu graficznego/CLI, moduł zarządzania danymi). Wskaż, w jaki sposób te moduły się ze sobą komunikują.}
+\section*{Wstęp do 5}
+Testy automatyczne w większych projektach często wymagają elastycznego i wydajnego podejścia do przygotowywania scenariuszy. Pojawia się zatem potrzeba narzędzi oraz strategii, które umożliwią \textbf{generowanie} skryptów testowych w zależności od specyfiki projektu, rodzaju testowanej aplikacji oraz preferowanego frameworka testowego. 
+
+Celem niniejszego rozdziału jest przedstawienie koncepcji i architektury systemu, który wspomaga proces tworzenia testów w sposób zautomatyzowany lub półautomatyczny. Omówione zostaną kluczowe elementy projektu, a także zaprezentowane diagramy klas i przypadków użycia. W dalszych sekcjach zostaną wskazane możliwości rozbudowy rozwiązania o dodatkowe funkcje, takie jak integracja z pipeline’ami CI/CD czy analiza błędów w generowanych scenariuszach.
+
+\section{Analiza diagramów i architektura}
+\label{sec:analiza-diagramow}
+
+W celu zrozumienia podstaw działania aplikacji oraz jej modułów, przygotowano dwa główne diagramy. Pierwszy z nich (\autoref{fig:diagram-projekt}) przedstawia najważniejsze \textbf{klasy i relacje} pomiędzy nimi w systemie. Drugi (\autoref{fig:use-uml}) obrazuje \textbf{przypadki użycia}, czyli scenariusze interakcji użytkownika (bądź systemu CI/CD) z tworzonym narzędziem.
+
+\subsection{Diagram klas}
+\label{subsec:diagram-klas}
+Na \autoref{fig:diagram-projekt} widoczny jest podział na kilka zasadniczych modułów:
+\begin{itemize}
+    \item \emph{Generator kodu testów (Codegen)} -- odpowiada za przekształcenie zadanych parametrów (np. akcji użytkownika z przeglądarki) w kod testowy wybranego frameworka.
+    \item \emph{Zarządzanie testami (TestManager)} -- stanowi warstwę orchestracji, w której operator może m.in. wprowadzać modyfikacje w interakcjach testowych czy usuwać niepotrzebne kroki.
+    \item \emph{Moduły wspomagające (Helpers, MockAPI)} -- ułatwiają generowanie przykładowych danych, weryfikację poprawności oraz walidację odpowiedzi (np. przeciwko fałszywym usługom).
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{diagram-projekt.png}
+    \caption{Diagram klas wygenerowany w Mermaid}
+    \label{fig:diagram-projekt}
+\end{figure}
+
+Na powyższym diagramie zaprezentowano również interakcje klas, takie jak:
+\begin{itemize}
+    \item \texttt{ScreenshotTestBuilder} współpracuje z \texttt{MockAPI} w celu ładowania danych i tworzenia zrzutów ekranu.
+    \item \texttt{TestManager} używa \texttt{Codegen} do generowania kodu testów.
+    \item \texttt{MockTest} służy do walidacji spójności między danymi testowymi a zasobami API.
+\end{itemize}
+
+\subsection{Diagram przypadków użycia}
+\label{subsec:diagram-use}
+Kolejnym istotnym elementem projektu jest \textbf{diagram przypadków użycia} (\autoref{fig:use-uml}), wskazujący na ogólny przepływ interakcji pomiędzy użytkownikiem (np. programistą lub testerem) a systemem. Przykładowo, „System CI/CD” może automatycznie uruchamiać testy przy każdym \emph{pushu} do repozytorium i wykorzystywać w tym celu gotowe skrypty wygenerowane przez nasze narzędzie.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{use-uml.png}
+    \caption{Diagram przypadków użycia wygenerowany w PlantUML}
+    \label{fig:use-uml}
+\end{figure}
+
+Diagram prezentuje także rozszerzone akcje w \texttt{TestManager}, takie jak:
+\begin{itemize}
+    \item \emph{Generowanie kodu} (Codegen) w oparciu o zarejestrowane kroki,
+    \item \emph{Modyfikacje i usuwanie interakcji}, np. gdy któryś z kroków staje się nieaktualny.
+\end{itemize}
+
+W następnych rozdziałach opisano w szczegółach implementację poszczególnych modułów (zarówno w zakresie kodu źródłowego, jak i logiki generującej
+scenariusze testowe), a także zaprezentowano sposoby integracji z zewnętrznymi narzędziami, np. GitLab CI czy Jenkinsem.
 
 \section{Interfejs użytkownika}
 {Zaprezentuj, jak wygląda interfejs (graficzny lub konsolowy) Twojej aplikacji:
