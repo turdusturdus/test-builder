@@ -279,16 +279,124 @@ Dzięki bogatej kolekcji wtyczek (\emph{plugins}) Jenkins może integrować się
 \textbf{Podsumowując}, włączenie testów automatycznych do procesu CI/CD stanowi nieodzowny element profesjonalnego cyklu wytwarzania oprogramowania, zapewniając ciągłą weryfikację jakości i szybką detekcję błędów. Integracja z narzędziami typu GitLab CI, GitHub Actions czy Jenkins umożliwia standaryzację procesu testowania, a także automatyzację raportowania wyników i uproszczoną ścieżkę wdrożenia na środowiska testowe oraz produkcyjne.
 
 \chapter{Strategie generacji testów}
-{Przedstaw wybrane podejścia do automatycznego lub półautomatycznego generowania testów.}
+\label{chap:strategie-generacji}
+W poprzednich rozdziałach przedstawiono ogólne zasady automatycznego testowania aplikacji webowych oraz omówiono wybrane technologie wspierające ten proces. Kolejnym krokiem jest przyjrzenie się różnym strategiom generowania testów – zarówno tym w pełni zautomatyzowanym, jak i tym półautomatycznym. Istnieje wiele podejść do tworzenia scenariuszy testowych, różniących się poziomem ingerencji człowieka, celem analizy kodu czy sposobem odwzorowania czynności użytkownika.
+
+Głównym założeniem rozdziału jest przedstawienie najczęściej stosowanych sposobów generowania testów, ze szczególnym uwzględnieniem tzw. podejścia \emph{record-and-play} i metod opartych na analizie modelu aplikacji. Dla mniejszych projektów często liczy się szybkość stworzenia podstawowego zestawu testowego, co zachęca do wypróbowania narzędzi rejestrujących rzeczywiste czynności wykonywane w przeglądarce. Z kolei w zespołach z rozbudowanym procesem wytwórczym i większym doświadczeniem testowym, coraz częściej spotyka się rozwiązania pozwalające generować testy na podstawie formalnych opisów działania aplikacji czy też statycznej analizy kodu.
+
+W dalszych częściach przyjrzymy się więc szczegółom wybranych podejść, uwzględniając ich zalety, wady oraz potencjalne obszary zastosowania.
 
 \section{Generowanie testów na podstawie rejestrowania akcji}
-{Opis: rejestrowanie czynności użytkownika w przeglądarce (np. za pomocą \emph{Selenium IDE}, \emph{Playwright Codegen}), a następnie generowanie skryptów testowych.}
+\label{sec:rejestrowanie-akcji}
+Jednym z najbardziej intuicyjnych sposobów tworzenia testów automatycznych jest rejestrowanie czynności wykonywanych w przeglądarce przez testera lub dewelopera. Metody tego typu określa się często jako \emph{record-and-play}, gdyż narzędzie „nagrywa” kolejne kliknięcia, wpisywanie danych w formularzach, czy nawigację pomiędzy podstronami. Następnie na podstawie zebranych informacji automatycznie generuje skrypt testowy w wybranym języku programowania.
 
-\section{Generowanie testów na podstawie modeli}
-{Możesz omówić krótko podejście \emph{Model-Based Testing}, gdzie testy są generowane z modelu zachowań systemu, stanów i przejść.}
+\subsection*{Idea podejścia \emph{record-and-play}}
+Podstawową zaletą rejestrowania akcji jest niski próg wejścia. Aby stworzyć pierwszy prototyp testu:
+\begin{enumerate}
+    \item Uruchamia się specjalny tryb w przeglądarce (lub w zewnętrznej aplikacji) – tzw. \emph{recorder},
+    \item Następnie przechodzi się przez kluczowe ścieżki biznesowe w aplikacji, np.\ logowanie się, uzupełnianie formularzy, przechodzenie do kolejnych podstron,
+    \item Narzędzie w tle zapisuje wszystkie akcje (kliknięcia, wprowadzony tekst, wybrane elementy interfejsu),
+    \item Po zakończeniu sesji generowany jest gotowy kod testu, który można od razu uruchomić lub dostosować do potrzeb projektu.
+\end{enumerate}
 
-\section{Analiza statyczna i tworzenie testów}
-{Wspomnij, że niektóre narzędzia potrafią analizować kod aplikacji i np. na podstawie ścieżek wywołań generować scenariusze testowe.}
+\subsection*{Popularne narzędzia}
+W praktyce istnieje kilka narzędzi wykorzystujących tę metodę:
+\begin{itemize}
+    \item \textbf{Selenium IDE} -- wtyczka do przeglądarek, umożliwiająca nagrywanie kroków użytkownika i konwertowanie ich na testy w różnych językach (Java, Python, C\#).
+    \item \textbf{Playwright Codegen} -- część frameworka \emph{Playwright}, pozwalająca na uruchomienie przeglądarki w trybie interaktywnym i automatyczne zapisywanie wykonanych akcji jako skrypt testowy (np.\ w TypeScripcie lub Pythonie).
+    \item \textbf{Cypress Recorder} (dostępny jako rozszerzenie do Chrome) -- rejestruje działania w przeglądarce i generuje kod testowy w stylu Cypress.
+\end{itemize}
+
+\subsection*{Zalety i ograniczenia}
+\noindent\textbf{Najważniejsze korzyści} podejścia \emph{record-and-play}:
+\begin{itemize}
+    \item \emph{Szybki start} -- nawet niewielkie doświadczenie w tworzeniu testów pozwala na zarejestrowanie podstawowych scenariuszy,
+    \item \emph{Bezpośrednie odzwierciedlenie rzeczywistych akcji} -- test powstaje na bazie realnego korzystania z aplikacji,
+    \item \emph{Łatwość tworzenia wersji demonstracyjnej} -- w krótkim czasie można wyprodukować pierwszy zestaw testów E2E.
+\end{itemize}
+
+\noindent\textbf{Ograniczenia} i \textbf{wady} tej metody:
+\begin{itemize}
+    \item \emph{Mała elastyczność wygenerowanego kodu} -- narzędzie rejestruje dokładnie to, co robiono w przeglądarce, co często skutkuje „sztywnymi” testami wrażliwymi na drobne zmiany w interfejsie,
+    \item \emph{Koncentracja na scenariuszach głównych} -- trudno w pełni automatycznie pokryć ścieżki alternatywne, obsługę nietypowych warunków, czy walidacje danych,
+    \item \emph{Konieczność refaktoryzacji} -- aby testy były utrzymywalne w dłuższej perspektywie, najczęściej trzeba ręcznie „uprzątnąć” wygenerowany kod, wprowadzając w nim wzorce projektowe (jak Page Object Model) czy obiekty wspólne.
+\end{itemize}
+
+\subsection*{Przykładowe wykorzystanie}
+Mimo wspomnianych ograniczeń, rejestrowanie akcji użytkownika pozostaje kuszącym rozwiązaniem przy tworzeniu szybkich prototypów testów w małych projektach lub podczas warsztatów i szkoleń z automatyzacji. Zarejestrowane w ten sposób przypadki testowe mogą też stanowić punkt wyjścia do dalszej refaktoryzacji i rozbudowy, szczególnie gdy zespół dopiero rozpoczyna przygodę z testowaniem E2E.
+
+% Jeśli chcesz dodać przykładowy obrazek:
+% \begin{figure}[htbp]
+%   \centering
+%   \fbox{\rule{0pt}{70pt}\rule{0.9\linewidth}{0pt}}
+%   \caption{Schemat idei rejestrowania akcji (placeholder).}
+%   \label{fig:record-and-play}
+% \end{figure}
+
+\section{Generowanie testów na podstawie rejestrowania akcji}
+\label{sec:generowanie-rejestrowanie}
+
+Jednym z najbardziej intuicyjnych sposobów przyspieszających tworzenie testów automatycznych jest rejestrowanie czynności użytkownika w przeglądarce, często określane mianem podejścia \emph{record-and-play}. Polega ono na „nagrywaniu” akcji wykonywanych przez testera (lub dewelopera) na stronie internetowej: kliknięć, wprowadzania danych w pola tekstowe czy nawigowania pomiędzy podstronami. Następnie narzędzie, które uczestniczy w tym procesie, generuje skrypt testowy w określonym języku programowania (np. w~JavaScripcie, TypeScripcie czy Pythonie). 
+
+\subsection*{Zalety podejścia \emph{record-and-play}}
+\begin{itemize}
+    \item \textbf{Niski próg wejścia:} do wytworzenia wstępnego zestawu testów nie jest wymagana dogłębna znajomość frameworków testowych czy samej aplikacji — wystarczy poprawnie wykonać oczekiwane scenariusze w przeglądarce.
+    \item \textbf{Szybkie prototypowanie:} rejestrując akacje, można w ciągu kilku minut uzyskać podstawowy plik testowy, który może być w późniejszym czasie rozwijany lub modyfikowany.
+    \item \textbf{Naturalne odwzorowanie zachowań użytkownika:} wytworzony skrypt w dużym stopniu odzwierciedla rzeczywiste ścieżki korzystania z aplikacji.
+\end{itemize}
+
+\subsection*{Wyzwania i ograniczenia}
+\begin{itemize}
+    \item \textbf{Nadmierna szczegółowość skryptu:} automatycznie wygenerowane testy bywają wrażliwe na nawet drobne zmiany w interfejsie, co w praktyce może prowadzić do częstszych aktualizacji kodu.
+    \item \textbf{Brak abstrakcji i trudniejsza konserwacja:} w kodzie \emph{record-and-play} często nie ma wydzielonych warstw (np. Page Object Model), co utrudnia dalszy rozwój i utrzymanie.
+    \item \textbf{Ograniczone pokrycie przypadków brzegowych:} narzędzia do nagrywania zazwyczaj skupiają się na głównych ścieżkach użytkownika, pomijając mniej oczywiste zachowania czy błędne dane wejściowe.
+\end{itemize}
+
+\subsection*{Przykładowe narzędzia}
+\begin{itemize}
+    \item \textbf{Selenium IDE} – rozszerzenie do przeglądarek (Chrome, Firefox), umożliwiające nagrywanie akcji i eksport gotowych testów w językach takich jak Java czy Python.
+    \item \textbf{Cypress Recorder} – dodatkowe wtyczki do Chrome pozwalające generować skrypty kompatybilne z~frameworkiem Cypress.
+    \item \textbf{Playwright Codegen} – wbudowany w Playwright moduł do interaktywnego rejestrowania kolejnych kroków w przeglądarce i konwertowania ich na kod testowy w TypeScripcie, Pythonie czy .NET.
+\end{itemize}
+
+Podsumowując, \emph{record-and-play} stanowi wartościowe rozwiązanie na start dla zespołów, które chcą szybko zbudować bazowy zestaw testów. Jednak w dłuższej perspektywie wymaga wprowadzania dodatkowych warstw abstrakcji (np. wzorca Page Object), by utrzymać elastyczność i czytelność kodu.
+
+\section{Generowanie testów w oparciu o model systemu}
+\label{sec:generowanie-model}
+
+Kolejnym sposobem automatycznego tworzenia skryptów testowych jest wykorzystanie tzw. \emph{Model-Based Testing} (MBT). W tym podejściu testy są generowane na podstawie formalnego modelu systemu, opisującego możliwe stany i przejścia między nimi. Model może przybrać różne formy — od diagramów stanów (FSM), przez sieci Petriego, po bardziej abstrakcyjne notacje służące do opisu zachowań aplikacji.
+
+\subsection*{Zasada działania}
+\begin{enumerate}
+    \item \textbf{Budowa modelu:} tester lub analityk przygotowuje schemat zachowań systemu (np. diagram stanów), uwzględniający akcje, które użytkownik może wykonać, oraz warunki przejścia między stanami.
+    \item \textbf{Definicja danych testowych:} do każdego przejścia lub akcji przypisuje się typowe dane wejściowe (np. zmienne, wartości parametryczne).
+    \item \textbf{Generowanie ścieżek:} narzędzie MBT automatycznie tworzy ścieżki przejść w modelu tak, by osiągnąć określone pokrycie (np. pokrycie wszystkich stanów, przejść czy ścieżek do określonej głębokości).
+    \item \textbf{Konwersja na skrypty testowe:} każda wygenerowana ścieżka jest translowana do kodu testowego, uwzględniającego konkretną logikę, dane wejściowe i asercje zgodne z wymaganiami.
+\end{enumerate}
+
+\subsection*{Zalety i przykładowe zastosowania}
+\begin{itemize}
+    \item \textbf{Pokrycie nieoczywistych ścieżek:} automatyczna eksploracja modelu może ujawnić błędy w rzadko używanych scenariuszach, które trudno wychwycić przy testowaniu manualnym.
+    \item \textbf{Utrzymanie spójności z dokumentacją:} aktualizacja modelu — o ile jest dobrze prowadzona — odzwierciedla wprost zmiany w wymaganiach, co przekłada się na automatyczne dostosowanie testów do nowych założeń.
+    \item \textbf{Uproszczenie testowania regresyjnego:} gdy model jest kompletny, łatwiej odświeżać zestawy testowe pod kątem zmian w aplikacji.
+\end{itemize}
+
+\subsection*{Wyzwania i ograniczenia}
+\begin{itemize}
+    \item \textbf{Konieczność posiadania modelu:} proces tworzenia i aktualizacji poprawnego modelu aplikacji bywa czasochłonny, zwłaszcza w rozbudowanych projektach.
+    \item \textbf{Specyficzne narzędzia MBT:} wiele rozwiązań do testowania modelowego wymaga dedykowanego oprogramowania i znajomości notacji, co niekiedy podnosi próg wejścia dla zespołu.
+    \item \textbf{Łączenie z testami E2E:} generowane skrypty często potrzebują integracji z frameworkami do testów e2e (np. Selenium, Playwright), co wymaga dodatkowych warstw konfiguracji.
+\end{itemize}
+
+\subsection*{Przykładowy proces}
+\begin{enumerate}
+    \item Opracowanie prostego diagramu stanów aplikacji (np.~logowanie, wyszukiwanie, wylogowanie).
+    \item Zdefiniowanie warunków przejść: przejście do ekranu wyszukiwania jest możliwe tylko po poprawnym zalogowaniu.
+    \item Wprowadzenie danych wejściowych (np. nazwy użytkowników, hasła) oraz oczekiwanych rezultatów (np. komunikaty o błędzie).
+    \item Wygenerowanie ścieżek i przełożenie ich na testy (w formie kodu), które można uruchomić w~dotychczasowym środowisku CI/CD.
+\end{enumerate}
+
+Model-Based Testing znajduje szczególne zastosowanie w systemach o dużej liczbie stanów czy reguł biznesowych. Pozwala zaplanować testy w sposób bardziej zorganizowany i systematyczny niż przypadkowe kliknięcia czy ręcznie pisane scenariusze. Jego wdrożenie wymaga jednak przygotowania i dyscypliny w utrzymaniu modelu, co w praktyce sprawdza się najlepiej w projektach długoterminowych, w których automatyzacja i jakość odgrywają kluczową rolę.
 
 \chapter{Architektura oraz interfejs aplikacji}
 {W tym rozdziale opiszesz konstrukcję swojego narzędzia, jego moduły, sposób komunikacji itp.}
