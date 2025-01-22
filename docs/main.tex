@@ -62,16 +62,85 @@ W dalszych rozdziałach zaprezentowano kluczowe elementy związane z projektowan
 \end{itemize}
 
 \chapter{Przykłady zastosowań testów}
-{W tym rozdziale omówisz kontekst, w którym testy (zwłaszcza automatyczne) są wykorzystywane w praktyce. Możesz przytoczyć zastosowania w różnych typach projektów, skalę i złożoność testów, wpływ na jakość.}
+\label{chap:przyklady-testow}
+Współczesne aplikacje webowe – bez względu na ich skalę – wymagają odpowiedniego poziomu kontroli jakości, a testy automatyczne są jednym z najsolidniejszych sposobów osiągnięcia tego celu. W niniejszym rozdziale przedstawiono typowe rodzaje testów stosowane przy rozwoju oprogramowania, ze szczególnym uwzględnieniem aplikacji internetowych. Rozważymy zarówno proste testy jednostkowe, jak i bardziej rozbudowane testy integracyjne czy kompleksowe testy end-to-end (E2E). Każdy z wymienionych poziomów testowania ma swoją specyfikę oraz obszar zastosowań – dzięki temu w bardziej złożonych projektach można zastosować podejście wielopoziomowe, co pozwala uniknąć błędów na różnych etapach.
+
+Testy te pełnią także niebagatelną rolę w procesie ciągłej integracji i dostarczania (CI/CD). Automatyczne uruchamianie zestawów testowych przed wdrożeniem oprogramowania minimalizuje ryzyko wypuszczenia wadliwej wersji aplikacji. W dalszej części rozdziału pokazane zostaną najważniejsze cechy trzech kluczowych kategorii testów, a także krótki komentarz dotyczący korzyści i wyzwań związanych z ich stosowaniem.
 
 \section{Testy jednostkowe}
-{Krótko scharakteryzuj, czym są testy jednostkowe (tzw. \emph{unit tests}), w jakim momencie cyklu życia aplikacji są najczęściej tworzone i jak duże znaczenie mają w zapewnieniu jakości.}
+\label{sec:testy-jednostkowe}
+Testy jednostkowe (ang. \emph{unit tests}) skupiają się na najmniejszych fragmentach oprogramowania, zazwyczaj na pojedynczych funkcjach, metodach lub klasach. Celem takich testów jest sprawdzenie poprawności działania konkretnego komponentu w oderwaniu od reszty systemu. Dzięki temu programiści mogą szybko wykryć regresje w kodzie w momencie wprowadzania zmian lub nowych funkcjonalności.
+
+\subsection*{Charakterystyka i zalety testów jednostkowych}
+\begin{itemize}
+    \item \textbf{Wczesne wykrywanie błędów:} niewielki zakres testowanych fragmentów kodu umożliwia szybką diagnozę przyczyn problemu.
+    \item \textbf{Łatwość uruchamiania:} testy te są zwykle szybkie i mało zasobożerne, dzięki czemu mogą być wykonywane nawet przy każdej kompilacji.
+    \item \textbf{Wspieranie refaktoryzacji:} jeśli są dobrze napisane, stanowią swego rodzaju „siatkę bezpieczeństwa” – zmiana kodu pociąga za sobą natychmiastową weryfikację, czy nadal działa on tak, jak powinien.
+\end{itemize}
+
+\subsection*{Miejsce w cyklu życia aplikacji}
+Zazwyczaj testy jednostkowe tworzone są równolegle z implementacją funkcji bądź metod, często w metodyce \emph{Test-Driven Development} (TDD). Nawet jeśli programiści nie stosują formalnie TDD, to i tak przeważnie piszą testy tuż po implementacji kluczowych funkcji. Pozwala to na bieżąco weryfikować stabilność kodu i ogranicza ryzyko dalszych problemów w bardziej złożonych warstwach systemu.
+
+\subsection*{Znaczenie dla jakości oprogramowania}
+Choć testy jednostkowe nie gwarantują wykrycia wszystkich błędów (szczególnie tych na poziomie integracji czy funkcjonalności kompleksowej), stanowią one fundament rzetelnego procesu testowego. Dzięki nim łatwiej utrzymać wysoką jakość aplikacji w długofalowym rozwoju, ograniczając liczbę niespodziewanych błędów w kluczowych komponentach kodu.
 
 \section{Testy integracyjne}
-{Przedstaw zakres i główny cel testów integracyjnych – jak wiele modułów/systemów obejmują, w jaki sposób zapewniają spójność między komponentami i jak to się ma do aplikacji webowych.}
+\label{sec:testy-integracyjne}
+Testy integracyjne (ang. \emph{integration tests}) służą do weryfikacji współdziałania między różnymi komponentami lub modułami systemu. W odróżnieniu od testów jednostkowych, które koncentrują się na pojedynczych funkcjach, testy integracyjne sprawdzają poprawność przepływu danych oraz komunikacji na wyższym poziomie.
+
+\subsection*{Główny cel i zakres}
+Podstawowym celem testów integracyjnych jest upewnienie się, że wszystkie części aplikacji współpracują ze sobą w sposób zgodny z założeniami. W projektach webowych może to obejmować m.in. komunikację serwera z bazą danych, przepływ danych między mikrousługami, a także integrację z zewnętrznymi API. Zakres takiego testu jest zatem szerszy niż w przypadku testów jednostkowych, ponieważ obejmuje wiele komponentów, a niekiedy także usługi firm trzecich.
+
+\subsection*{Przykłady zastosowań w aplikacjach webowych}
+\begin{itemize}
+    \item \textbf{Sprawdzenie warstwy API i bazy danych:} testy integracyjne mogą weryfikować, czy zapytania HTTP wysyłane przez front-end trafiają do warstwy serwerowej i są poprawnie przetwarzane, a także czy baza danych zwraca oczekiwane wyniki.
+    \item \textbf{Integracja z usługami zewnętrznymi:} w przypadku aplikacji korzystających z serwisów płatności czy map, testy integracyjne pozwalają sprawdzić, czy dane usługi są właściwie wywoływane i czy zwracają poprawne odpowiedzi.
+    \item \textbf{Weryfikacja logiki po stronie serwera:} testy mogą obejmować zaszyte w kodzie warunki, reguły biznesowe czy sekwencje operacji, które są wykonywane przy interakcji między kilkoma modułami.
+\end{itemize}
+
+\subsection*{Korzyści i wyzwania}
+\textbf{Zaletą} testów integracyjnych jest to, że pozwalają wykryć problemy w miejscach, gdzie komponenty łączą się i współpracują. Dzięki temu można uniknąć sytuacji, w której pojedyncze moduły działają poprawnie samodzielnie, ale po zestawieniu razem pojawiają się nieoczekiwane błędy. \\
+\textbf{Wyzwania} to z kolei konieczność skonfigurowania odpowiednich środowisk testowych i danych. Wymaga to często stawiania testowych baz danych lub stubów i mocków dla zewnętrznych API. Przy dużych projektach może być to stosunkowo pracochłonne i kosztowne w utrzymaniu. 
+
+% Przykładowy schemat (opcjonalnie):
+% \begin{figure}[h]
+%     \centering
+%     \fbox{\rule{0pt}{40pt}\rule{0.9\linewidth}{0pt}}
+%     \caption{Schemat interakcji modułów w testach integracyjnych.}
+%     \label{fig:integration-tests}
+% \end{figure}
 
 \section{Testy end-to-end (E2E)}
-{Wyjaśnij, na czym polega koncepcja testów end-to-end w kontekście aplikacji webowych, kiedy i dlaczego warto je stosować oraz jakie narzędzia są do nich najczęściej wykorzystywane.}
+\label{sec:testy-end-to-end}
+Testy end-to-end (ang. \emph{end-to-end tests}) to najbardziej rozbudowany rodzaj testów funkcjonalnych, w których symuluje się rzeczywiste zachowanie użytkownika końcowego (lub interakcję system–system) w całym przekroju aplikacji. Obejmują one wszystkie warstwy oprogramowania, od interfejsu użytkownika po bazę danych i usługi zewnętrzne.
+
+\subsection*{Na czym polega koncepcja testów E2E w aplikacjach webowych}
+Główną ideą testów E2E jest sprawdzenie, czy cała aplikacja działa poprawnie, gdy rozpatrujemy ją jako kompletny produkt. Taki test może obejmować np.:
+\begin{enumerate}
+    \item Uruchomienie przeglądarki i wejście na stronę logowania.
+    \item Wprowadzenie danych uwierzytelniających i przejście do właściwej części aplikacji.
+    \item Skorzystanie z określonych funkcji (np. wyszukiwanie produktu, dodawanie do koszyka, finalizacja zamówienia).
+    \item Weryfikację rezultatów w bazie danych czy też w komunikatach wyświetlanych użytkownikowi.
+\end{enumerate}
+Cały przepływ jest obserwowany oraz weryfikowany pod kątem spełnienia wymagań biznesowych i oczekiwań użytkownika.
+
+\subsection*{Kiedy i dlaczego warto je stosować}
+\begin{itemize}
+    \item \textbf{Pełne pokrycie scenariuszy biznesowych:} testy E2E sprawdzają logikę aplikacji od początku do końca, co pozwala mieć pewność, że kluczowe ścieżki są wolne od krytycznych błędów.
+    \item \textbf{Symulacja realnych warunków:} testy odzwierciedlają działania prawdziwego użytkownika, dzięki czemu można wychwycić problemy wynikające z kolejności czynności czy specyfiki interfejsu.
+    \item \textbf{Wysoka wiarygodność:} przejście całego procesu „na żywo” daje dobre potwierdzenie, że aplikacja działa w sposób oczekiwany.
+\end{itemize}
+Z drugiej strony testy E2E są zwykle \textbf{najwolniejsze} i \textbf{najtrudniejsze w utrzymaniu}, ponieważ wymagają uruchomienia wszystkich niezbędnych elementów systemu (np. front-end, back-end, baza danych, zewnętrzne usługi). Dlatego stosuje się je najczęściej do krytycznych ścieżek użytkownika oraz do ostatecznej weryfikacji przed wdrożeniem.
+
+\subsection*{Przykładowe narzędzia}
+Do najpopularniejszych rozwiązań wspierających testy end-to-end w aplikacjach webowych należą:
+\begin{itemize}
+    \item \textbf{Selenium WebDriver} – klasyczne narzędzie automatyzujące przeglądarkę, szeroko wspierane przez społeczność.
+    \item \textbf{Cypress} – nowoczesny framework skupiający się na testach front-endu z szybkim sprzężeniem zwrotnym.
+    \item \textbf{Playwright} – rozwijane przez Microsoft narzędzie oferujące bogate możliwości w zakresie automatyzacji przeglądarek (Chromium, Firefox, WebKit).
+    \item \textbf{TestCafe} – stosunkowo proste rozwiązanie pozwalające pisać testy E2E w JavaScripcie i TypeScripcie, bez konieczności instalacji dodatkowych sterowników przeglądarki.
+\end{itemize}
+Wybór konkretnego narzędzia zależy od technologii użytych w danym projekcie, wymagań zespołu oraz preferencji co do języka programowania. 
 
 \chapter{Dostępne technologie}
 {Rozdział poświęcony krótkiej analizie i porównaniu dostępnych narzędzi czy bibliotek wspierających tworzenie i uruchamianie testów dla aplikacji webowych.}
