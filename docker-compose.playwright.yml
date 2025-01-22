@@ -9,13 +9,13 @@ services:
   console:
     extends:
       service: base
-    command: npm run start
+    command: npm run test:e2e
 
   ui-mode:
     extends:
       service: base
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
-    command: npm run start  -- --ui
+    command: npm run test:e2e  -- --ui
     environment:
       - DISPLAY
