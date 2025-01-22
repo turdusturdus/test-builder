@@ -1,5 +1,5 @@
 export const basePageUrl = 'https://automationintesting.online';
-export const baseApiUrl = 'https://automationintesting.online'; // or wherever your API lives
+export const baseApiUrl = 'https://automationintesting.online/'; // or wherever your API lives
 export const defaultCustomDarkCSS = `
   body {
     background: grey;
