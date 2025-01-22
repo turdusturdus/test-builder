@@ -1,4 +1,3 @@
-
 \documentclass[12pt]{report}
 \usepackage[T1]{fontenc} % Obsługa polskich znaków
 \usepackage[utf8]{inputenc}
@@ -24,45 +23,127 @@
 \newpage
 
 \chapter{Wstęp}
+W niniejszym wstępie postaram się uzasadnić istotność tematu pracy inżynierskiej. Tytuł pracy "Narzędzie wspierające tworzenie testów dla aplikacji webowych" opisuje funkcję, jaką stworzony w ramach pracy inżynierskiej program ma za zadanie spełnić. Jego rolą jest dostarczenie użytkownikowi narzędzia, które pozwoliłoby mu dostarczać oprogramowania oraz testów lepszej jakości w krótszym czasie. Następne rozdziały postarają się omówić problematykę zagadnienia oraz możliwe rozwiązania. By zrozumieć i tym samym znaleźć motywację, by owe zagadnienia analizować, należałoby uzasadnić potrzebę tworzenia takiego rodzaju oprogramowania.
 
-W niniejszym wstępie postaram się uzasadnić istotność tematu pracy inżynierskiej. Tytuł pracy "Narzędzie wspierające tworzenie testów dla aplikacji webowych" opisuje funkcję jaką stworzony w ramach pracy inżynierskiej program ma za zadanie spełnić. Jego rolą jest dostarczenie użytkownikowi narzędzia, które pozwoliłoby mu dostarczać oprogramowania oraz testów lepszej jakości w krótszym czasie. Następne rozdziały postarają się omówić problematykę zagadnienia oraz możliwe rozwiązania. By zrozumieć i tym samym znaleźć motywację by owe zagadnienia analizować, należałoby uzasadnić potrzebę tworzenia takiego rodzaju oprogramowania.
+Testy stanowią kluczowy element każdego zaawansowanego oraz dojrzałego systemu informatycznego bądź aplikacji. Jest to fakt uznany i łatwy do wykazania, zwracając uwagę choćby na istnienie specjalnych oddziałów w korporacjach zajmujących się wyłącznie tworzeniem testów, bądź zauważając wysoki popyt na programistów wyspecjalizowanych w tej dziedzinie. To właśnie takie korporacje najczęściej tworzą zaawansowane narzędzia typu omawianego w powyższej pracy inżynierskiej. W tak dużych projektach wszelkie błędy systemu potrafią odbić się na bardzo wysokich stratach finansowych, one właśnie stanowią główne źródło motywacji, by w ogóle te testy tworzyć. Jednocześnie warto zwrócić uwagę na wprost przeciwny obraz sytuacji dla projektów średnich bądź małych rozmiarów. W tego typu przedsięwzięciach często brakuje źródła motywacji m.in. w postaci potencjalnych wysokich strat finansowych, co skutkuje sytuacją, w której element testów jest pomijany ze względu na wysoki koszt czasowy ich tworzenia.
 
-Testy stanowią kluczowy element każdego zaawansowanego oraz dojrzałego systemu informatycznego bądź aplikacji. Jest to fakt uznany i łatwy do wykazania zwracając uwagę choćby na istnienie specjalnych oddziałów w korporacjach zajmujących się wyłącznie tworzeniem testów, bądź zauważając wysoki popyt na programistów wyspecjalizowanych w tej dziedzinie. To właśnie takie korporacje najczęściej tworzą zaawansowane narzędzia typu omawianego w powyższej pracy inżynierskiej. W tak dużych projektach wszelkie błędy systemu potrafią odbić się na bardzo wysokich stratach finansowych, one właśnie stanowią główne źródło motywacji by w ogóle te testy tworzyć. Jednocześnie warto zwrócić uwagę na wprost przeciwny obraz sytuacji dla projektów średnich bądź małych rozmiarów. W tego typu przedsięwzięciach często brakuje źródła motywacji m. in. w postaci potencjalnych wysokich strat finansowych, co skutkuje sytuacją w której element testów jest pomijany z wzglądu na wysoki koszt czasowy ich tworzenia.
+Głównym celem omawianej aplikacji będzie wyjście naprzeciw potrzebom ułatwienia tworzenia w krótkim czasie dużej ilości prostych testów tak, by małe i średnie projekty możliwie niskim kosztem uzyskały wysokie pokrycie testowe.
 
-Głównym celem omawianej aplikacji będzie wyjście naprzeciw potrzebom ułatwienia tworzenia w krótkim czasie dużej ilości prostych testów tak by małe i średnie projekty możliwie niskim kosztem uzyskały wysokie pokrycie testowe.
+\section{Cel i zakres pracy}
+{W tym podrozdziale możesz krótko opisać najważniejsze cele pracy, czyli np.:
+\begin{itemize}
+    \item jakie problemy rozwiązuje tworzone narzędzie,
+    \item z jakimi zagadnieniami z obszaru testowania aplikacji webowych się łączy,
+    \item jaki będzie końcowy rezultat (oprogramowanie, testy, dokumentacja).
+\end{itemize}
+Warto też wskazać, czy praca skupia się głównie na aspekcie teoretycznym (omówienie technologii) czy praktycznym (implementacja i testy).}
+
+\section{Struktura pracy}
+{Przedstaw pokrótce, jak wygląda układ rozdziałów i co czytelnik znajdzie w kolejnych częściach (np. przegląd technologii, strategii testowania, analiza architektury narzędzia, omówienie kodu i przykłady zastosowań).}
+
 
 \chapter{Przykłady zastosowań testów}
-% Treść rozdziału 2
+{W tym rozdziale omówisz kontekst, w którym testy (zwłaszcza automatyczne) są wykorzystywane w praktyce. Możesz przytoczyć zastosowania w różnych typach projektów, skalę i złożoność testów, wpływ na jakość.}
+
+\section{Testy jednostkowe}
+{Krótko scharakteryzuj, czym są testy jednostkowe (tzw. \emph{unit tests}), w jakim momencie cyklu życia aplikacji są najczęściej tworzone i jak duże znaczenie mają w zapewnieniu jakości.}
+
+\section{Testy integracyjne}
+{Przedstaw zakres i główny cel testów integracyjnych – jak wiele modułów/systemów obejmują, w jaki sposób zapewniają spójność między komponentami i jak to się ma do aplikacji webowych.}
+
+\section{Testy end-to-end (E2E)}
+{Wyjaśnij, na czym polega koncepcja testów end-to-end w kontekście aplikacji webowych, kiedy i dlaczego warto je stosować oraz jakie narzędzia są do nich najczęściej wykorzystywane.}
+
 
 \chapter{Dostępne technologie}
-% Treść rozdziału 3
+{Rozdział poświęcony krótkiej analizie i porównaniu dostępnych narzędzi czy bibliotek wspierających tworzenie i uruchamianie testów dla aplikacji webowych.}
+
+\section{Frameworki testowe}
+{Omów pokrótce kilka popularnych frameworków (np. \emph{Jest}, \emph{Mocha}, \emph{JUnit}, \emph{TestNG}, \emph{PyTest}, \emph{Playwright}, \emph{Selenium}), zwracając uwagę na to, w jaki sposób mogą być zastosowane do testów webowych.}
+
+\section{Biblioteki wspomagające generowanie testów}
+{Wspomnij np. o rozwiązaniach, które pozwalają w jakiś sposób wspierać generowanie testów: \emph{record-and-play}, narzędzia do analizy statycznej, itp. Możesz też nawiązać do \emph{Selenium} i \emph{Playwright codegen}.}
+
+\section{Narzędzia CI/CD}
+{Zasygnalizuj, że w projektach o większej skali testy automatyczne integruje się z pipeline’ami CI/CD (np. GitLab CI, GitHub Actions, Jenkins).}
+
 
 \chapter{Strategie generacji testów}
-% Treść rozdziału 4
+{Przedstaw wybrane podejścia do automatycznego lub półautomatycznego generowania testów.}
+
+\section{Generowanie testów na podstawie rejestrowania akcji}
+{Opis: rejestrowanie czynności użytkownika w przeglądarce (np. za pomocą \emph{Selenium IDE}, \emph{Playwright Codegen}), a następnie generowanie skryptów testowych.}
+
+\section{Generowanie testów na podstawie modeli}
+{Możesz omówić krótko podejście \emph{Model-Based Testing}, gdzie testy są generowane z modelu zachowań systemu, stanów i przejść.}
+
+\section{Analiza statyczna i tworzenie testów}
+{Wspomnij, że niektóre narzędzia potrafią analizować kod aplikacji i np. na podstawie ścieżek wywołań generować scenariusze testowe.}
+
 
 \chapter{Architektura oraz interfejs aplikacji}
-% Treść rozdziału 5
+{W tym rozdziale opiszesz konstrukcję swojego narzędzia, jego moduły, sposób komunikacji itp.}
+
+\section{Ogólny zarys architektury}
+{Zwięźle opisz główne moduły aplikacji (np. moduł generowania testów, moduł interfejsu graficznego/CLI, moduł zarządzania danymi). Wskaż, w jaki sposób te moduły się ze sobą komunikują.}
+
+\section{Interfejs użytkownika}
+{Zaprezentuj, jak wygląda interfejs (graficzny lub konsolowy) Twojej aplikacji:
+\begin{itemize}
+    \item główne ekrany/formularze,
+    \item sposób nawigacji,
+    \item kluczowe funkcje (np. generowanie pliku testowego, zapis ustawień).
+\end{itemize}
+Możesz dołączyć zrzuty ekranu i omówić je.}
+
 
 \chapter{Omówienie kodu źródłowego aplikacji}
-% Treść rozdziału 6
+{Przedstaw strukturę plików oraz folderów oraz wyjaśnij najważniejsze fragmenty implementacji. Wskaż, które biblioteki z rozdziału o „Dostępnych technologiach” zostały wykorzystane i w jaki sposób.}
+
+\section{Struktura projektu}
+{Opisz, w jaki sposób podzieliłeś/łaś projekt na moduły, pakiety, foldery:
+\begin{itemize}
+    \item logika generowania testów,
+    \item definicja modelu danych (np. dane o testach, konfiguracje),
+    \item klasy pomagające w tworzeniu raportów lub integracji z CI.
+\end{itemize}}
+
+\section{Kluczowe fragmenty kodu}
+{Zademonstruj przykłady najważniejszych funkcji/metod, np.:
+\begin{itemize}
+    \item kod odpowiedzialny za rejestrowanie interakcji,
+    \item generowanie plików testowych,
+    \item konwersję danych do konkretnych frameworków.
+\end{itemize}
+Przedstaw je w formie listingów z krótkim komentarzem.}
+
 
 \chapter{Przykłady użyć aplikacji}
-% Treść rozdziału 7
+{W tym rozdziale możesz zaprezentować, jak Twoje narzędzie działa w praktyce.}
+
+\section{Uruchamianie narzędzia w trybie interaktywnym}
+{Pokaż krok po kroku, jak użytkownik wypełnia formularz czy wybiera opcje w CLI, aby wygenerować testy. Zademonstruj końcowe pliki testowe.}
+
+\section{Integracja z procesem CI/CD}
+{Wyjaśnij, jak można włączyć wygenerowane testy do automatycznego pipeline’u, np. w GitLab CI, Jenkinsie, itp. Przedstaw przykładowy fragment konfiguracji.}
+
 
 \chapter{Podsumowanie}
-% Treść rozdziału 8
+{Na koniec podsumuj swoją pracę, oceń jej efekty i zaproponuj kierunki rozwoju.}
+
+\section{Wnioski końcowe}
+{Opisz, w jakim stopniu udało się osiągnąć założone cele, co było największym wyzwaniem, co dało najwięcej satysfakcji/rezultatów.}
+
+\section{Możliwości dalszego rozwoju}
+{Opisz, jakie jeszcze funkcjonalności można by dodać do narzędzia, jakie usprawnienia byłyby przydatne, jakie biblioteki lub technologie mogłyby zostać wykorzystane w przyszłości.}
+
 
 \begin{thebibliography}{9}
     \bibitem{roman2024} Roman, A., \& Zmitrow, K. (2024). \textit{Testowanie oprogramowania w praktyce: studium przypadków 2.0}.
-
     \bibitem{osherove2024} Osherove, R. (2024). \textit{Testy jednostkowe: świat niezawodnych aplikacji}.
-
     \bibitem{roman2024_case} Roman, A., \& Zmitrow, K. (2024). \textit{Testowanie oprogramowania w praktyce: studium przypadków}.
-
     \bibitem{roman2024_quality} Roman, A. (2024). \textit{Testowanie i jakość oprogramowania: modele, techniki, narzędzia}.
-
     \bibitem{circleci} CircleCI. (n.d.). What is End-to-End Testing? Pozyskano z \url{https://circleci.com/blog/what-is-end-to-end-testing/}
-
     \bibitem{playwright} Microsoft Playwright. (n.d.). Introduction to Playwright. Pozyskano z \url{https://playwright.dev/docs/intro}
 \end{thebibliography}
 
