@@ -143,16 +143,140 @@ Do najpopularniejszych rozwiązań wspierających testy end-to-end w aplikacjach
 Wybór konkretnego narzędzia zależy od technologii użytych w danym projekcie, wymagań zespołu oraz preferencji co do języka programowania. 
 
 \chapter{Dostępne technologie}
-{Rozdział poświęcony krótkiej analizie i porównaniu dostępnych narzędzi czy bibliotek wspierających tworzenie i uruchamianie testów dla aplikacji webowych.}
+Rozdział trzeci poświęcony jest omówieniu najpopularniejszych narzędzi i bibliotek wspierających proces testowania aplikacji webowych. Wybór odpowiednich frameworków i rozwiązań znacząco wpływa na wydajność tworzenia testów, ich utrzymanie oraz integrację z pozostałymi elementami środowiska projektowego. W pierwszej sekcji przyjrzymy się najistotniejszym \textit{frameworkom testowym}, dzięki którym można w prosty sposób pisać i organizować testy. Następnie zostaną omówione narzędzia usprawniające \emph{generowanie} i \emph{rejestrowanie} testów, a także najważniejsze rozwiązania integrujące się z procesami \emph{CI/CD}.
+
+Celem rozdziału jest wskazanie kluczowych czynników wyboru poszczególnych technologii oraz prezentacja ich mocnych i słabych stron w kontekście pracy inżynierskiej. Zrozumienie różnic między dostępnymi narzędziami pozwoli na świadomą decyzję przy projektowaniu i implementacji aplikacji wspierającej automatyczne testowanie, tak aby finalne rozwiązanie było dostosowane do różnych warunków projektowych.
 
 \section{Frameworki testowe}
-{Omów pokrótce kilka popularnych frameworków (np. \emph{Jest}, \emph{Mocha}, \emph{JUnit}, \emph{TestNG}, \emph{PyTest}, \emph{Playwright}, \emph{Selenium}), zwracając uwagę na to, w jaki sposób mogą być zastosowane do testów webowych.}
+Framework testowy to zestaw narzędzi i bibliotek, które pomagają w tworzeniu, organizowaniu oraz uruchamianiu testów w sposób powtarzalny i zautomatyzowany. W przypadku testów aplikacji webowych, frameworki te mogą oferować szerokie wsparcie dla różnych języków programowania (np. JavaScript, Python, Java, C\#) i typów testów (jednostkowe, integracyjne, end-to-end).
+
+\subsection*{Przegląd wybranych rozwiązań}
+\begin{itemize}
+    \item \textbf{JUnit / TestNG} (dla Javy) -- bardzo popularne narzędzia w świecie Javy. JUnit jest często stosowany do testów jednostkowych, podczas gdy TestNG oferuje szerokie możliwości konfiguracyjne i równoległe uruchamianie testów.
+    \item \textbf{Pytest} (dla Pythona) -- charakteryzuje się prostą składnią, a także bogatym zestawem wtyczek (tzw. \emph{plugins}). Dzięki nim łatwo integrować testy z innymi narzędziami (np. do raportowania).
+    \item \textbf{Mocha / Jest} (dla JavaScript / Node.js) -- Mocha jest lekkim frameworkiem, który pozwala tworzyć testy asynchroniczne i synchroniczne. Z kolei Jest (rozwijany przez Facebook) jest często wybierany do testowania aplikacji React czy w ogóle projektów front-endowych.
+    \item \textbf{Cucumber} -- narzędzie pozwalające na pisanie testów w formie zrozumiałej dla nietechnicznych interesariuszy, wykorzystuje tzw. \emph{Gherkin syntax}. Istotne w projektach nastawionych na \emph{BDD} (\emph{Behavior-Driven Development}).
+    \item \textbf{Playwright} -- oferuje nie tylko samo uruchamianie testów end-to-end w przeglądarce, ale również wbudowany test runner, raportowanie czy możliwość kodowania w JavaScript, Pythonie i C#.
+\end{itemize}
+
+\subsection*{Kryteria wyboru}
+Decydując się na konkretny framework testowy, warto wziąć pod uwagę następujące czynniki:
+\begin{itemize}
+    \item \textbf{Język programowania w projekcie} -- wybór frameworku powinien być naturalnie zgodny z dominującą technologią w zespole.
+    \item \textbf{Typ aplikacji i zakres testów} -- np. do testów front-endu React popularne jest Jest + React Testing Library, a do testów integracji back-endowych może się lepiej sprawdzić Pytest lub JUnit.
+    \item \textbf{Możliwość integracji z CI/CD} -- jeżeli projekt wymaga ciągłej integracji, lepiej wybrać framework, który ma dobre wsparcie w popularnych narzędziach (np. GitHub Actions, Jenkins, GitLab CI).
+    \item \textbf{Społeczność i dokumentacja} -- dojrzałe narzędzia z dużą społecznością pozwalają szybciej rozwiązywać problemy i uzyskać wsparcie.
+\end{itemize}
+
+% --- tu można opcjonalnie wstawić rysunek z jakimś schematem porównania frameworków, jeśli chcesz ---
+% \begin{figure}[ht]
+%     \centering
+%     % \includegraphics[width=0.8\textwidth]{comparison.png}
+%     \caption{Przykładowy schemat porównania popularnych frameworków testowych.}
+%     \label{fig:framework-comparison}
+% \end{figure}
 
 \section{Biblioteki wspomagające generowanie testów}
-{Wspomnij np. o rozwiązaniach, które pozwalają w jakiś sposób wspierać generowanie testów: \emph{record-and-play}, narzędzia do analizy statycznej, itp. Możesz też nawiązać do \emph{Selenium} i \emph{Playwright codegen}.}
+\label{sec:biblioteki-generujace}
+Współczesne narzędzia do automatycznego testowania aplikacji webowych coraz częściej oferują funkcjonalności pozwalające na częściowe lub całkowite \textit{generowanie} testów. W dużej mierze polega to na rejestrowaniu czynności użytkownika w przeglądarce (tzw. podejście \emph{record-and-play}) bądź analizie kodu źródłowego i~struktur aplikacji w celu wygenerowania przykładowych skryptów. Rozwiązania te mogą znacząco przyspieszyć proces pisania testów, zwłaszcza dla początkujących zespołów lub projektów o ograniczonych zasobach.
+
+\subsection*{Podejście \emph{record-and-play}}
+Najbardziej intuicyjnym sposobem generowania testów jest nagrywanie sekwencji działań podejmowanych przez użytkownika w~przeglądarce:
+\begin{itemize}
+    \item \textbf{Selenium IDE} – wtyczka do przeglądarek oparta na środowisku Selenium, umożliwia „nagrywanie” akcji, a~następnie eksport wygenerowanych skryptów w~formie testów w różnych językach (np. Java, Python, C\#). Rozwiązanie to pozwala szybko stworzyć prototypowe testy E2E, choć często wymagają one późniejszej korekty i refaktoryzacji.
+    \item \textbf{Playwright Codegen} – część zestawu narzędzi \emph{Playwright}. Pozwala uruchomić przeglądarkę w~trybie interaktywnym i~rejestrować wszystkie kliknięcia, wpisywane teksty czy nawigację. Na tej podstawie generuje gotowy kod testu (np. w~TypeScripcie, Pythonie czy C\#). Wyjściowy skrypt można następnie dostosować do bardziej skomplikowanych scenariuszy.
+    \item \textbf{TestCafe Recorder} (w~formie zewnętrznych wtyczek) – niektóre narzędzia dla TestCafe wspierają nagrywanie testów, choć zwykle w~mniejszym zakresie niż Selenium IDE czy Playwright.
+\end{itemize}
+Zaletą podejścia \emph{record-and-play} jest niski próg wejścia – wystarczy zainstalować wtyczkę lub uruchomić odpowiednie polecenie, by w~kilka minut otrzymać wstępny zestaw testów. Wadą jest jednak często mała elastyczność i~tendencja do generowania „sztywnych” skryptów, które mogą łatwo ulec awarii przy zmianach w~interfejsie użytkownika.
+
+\subsection*{Analiza kodu i generowanie szkieletów testów}
+Innym trendem jest narzędziowe wspomaganie pisania testów na bazie analizy kodu aplikacji:
+\begin{itemize}
+    \item \textbf{Narzędzia do analizy statycznej} – potrafią wyznaczać ścieżki wykonania w~kodzie oraz punkty potencjalnych błędów. Nie generują one pełnych testów, ale często dostarczają struktury (np. w~formie szkieletu \emph{test suite}) z uwzględnieniem klas, metod czy modułów wymagających szczególnej uwagi.
+    \item \textbf{Boty testujące interfejs} – istnieją również inicjatywy open-source (np. \emph{Heuristics-based Exploratory Bots}) próbujące „klikać” w~elementy na stronie według pewnych heurystyk i w~ten sposób automatycznie odkrywać ścieżki testowe. Następnie generowane są raporty lub nawet wstępny kod testów E2E.
+\end{itemize}
+Rozwiązania oparte na analizie kodu lub heurystykach są bardziej zaawansowane koncepcyjnie, jednak wciąż często wymagają finalnego dostosowania testów przez doświadczonego programistę lub testera.
+
+\subsection*{Zalety i wyzwania stosowania generatorów testów}
+\textbf{Główne korzyści} z wykorzystania bibliotek wspierających generowanie testów:
+\begin{itemize}
+    \item \emph{Oszczędność czasu} – szybkie uzyskanie podstawowej wersji skryptów testowych.
+    \item \emph{Niższy próg wejścia} – osoby początkujące w automatyzacji mogą efektywniej rozpocząć prace nad testami.
+    \item \emph{Standaryzacja} – automatycznie wygenerowane testy często stosują zunifikowane wzorce i konwencje, co ułatwia późniejszą konserwację.
+\end{itemize}
+\textbf{Podstawowe wyzwania}:
+\begin{itemize}
+    \item \emph{Brak elastyczności} – wygenerowane testy bywają nadmiernie zależne od konkretnego układu strony czy struktury kodu.
+    \item \emph{Konieczność refaktoryzacji} – zazwyczaj wymagane jest przeorganizowanie kodu, aby testy były utrzymywalne w dłuższym okresie.
+    \item \emph{Aktualizacje przy zmianach w aplikacji} – przy każdej modyfikacji interfejsu czy logiki biznesowej część wygenerowanego kodu może tracić ważność.
+\end{itemize}
 
 \section{Narzędzia CI/CD}
-{Zasygnalizuj, że w projektach o większej skali testy automatyczne integruje się z pipeline’ami CI/CD (np. GitLab CI, GitHub Actions, Jenkins).}
+\label{sec:narzedzia-ci-cd}
+W projektach o~większej skali testy automatyczne nie kończą się wyłącznie na lokalnym uruchomieniu. Kluczowe znaczenie ma zintegrowanie ich z~procesem ciągłej integracji i~dostarczania (CI/CD), tak aby każdy fragment nowego kodu był weryfikowany pod kątem poprawności i~stabilności. Poniżej przedstawiono najpopularniejsze narzędzia CI/CD oraz sposoby włączania do nich testów automatycznych.
+
+\subsection*{GitLab CI}
+Platforma GitLab oferuje wbudowany system CI/CD oparty na pliku \emph{.gitlab-ci.yml}. Aby dołączyć testy webowe (np. napisane z~użyciem Playwright, Selenium czy Cypress), należy:
+\begin{itemize}
+    \item Zdefiniować etap (job) w sekcji \emph{test}, w którym instalowane są zależności (np. \emph{npm install} w przypadku JavaScript/TypeScript),
+    \item Uruchomić polecenie wywołujące testy (np. \emph{npx playwright test}),
+    \item Skonfigurować artefakty, czyli np. raport HTML lub zrzuty ekranu w razie niepowodzenia testów.
+\end{itemize}
+Przykład fragmentu \emph{.gitlab-ci.yml} może wyglądać następująco:
+\begin{verbatim}
+stages:
+  - build
+  - test
+
+e2e_tests:
+  stage: test
+  image: mcr.microsoft.com/playwright:focal
+  script:
+    - npm ci
+    - npx playwright test
+  artifacts:
+    when: on_failure
+    paths:
+      - playwright-report
+\end{verbatim}
+
+\subsection*{GitHub Actions}
+\emph{GitHub Actions} to kolejne popularne narzędzie do automatyzacji zadań w cyklu rozwoju oprogramowania. Plik konfiguracyjny (np.~\emph{.github/workflows/test.yml}) definiuje \emph{jobs}, które można uruchamiać przy zdarzeniach takich jak \emph{push} czy \emph{pull request}. W kontekście testów automatycznych częstą praktyką jest:
+\begin{itemize}
+    \item Wybór obrazu bazowego (np. \emph{ubuntu-latest}),
+    \item Instalacja wymaganych bibliotek i narzędzi (Selenium, Playwright),
+    \item Uruchomienie skryptów testowych,
+    \item Publikacja wyników testów jako część \emph{Actions artifacts}.
+\end{itemize}
+
+\subsection*{Jenkins}
+\emph{Jenkins} to jedno z najstarszych i najbardziej konfigurowalnych narzędzi CI/CD typu open source. Dla testów webowych zazwyczaj przygotowuje się \emph{pipeline}, w którym:
+\begin{itemize}
+    \item Następuje pobranie kodu z repozytorium,
+    \item Uruchamiane są komendy instalacji i testów,
+    \item Generowany jest raport (np. w formacie JUnit, HTML czy Allure),
+    \item Raport prezentowany jest w~interfejsie Jenkins po zakończeniu procesu.
+\end{itemize}
+Dzięki bogatej kolekcji wtyczek (\emph{plugins}) Jenkins może integrować się z wieloma innymi usługami i narzędziami, m.in. z Selenium Grid, Dockerem czy Kubernetesem, ułatwiając równoległe uruchamianie testów na różnych konfiguracjach.
+
+\subsection*{Kluczowe korzyści integracji testów z CI/CD}
+\begin{itemize}
+    \item \textbf{Bieżąca kontrola jakości} – przy każdym \emph{commit} testy są wywoływane automatycznie, co umożliwia szybką reakcję na regresje.
+    \item \textbf{Automatyzacja raportowania} – wyniki testów są od razu dostępne dla zespołu, w tym graficzne raporty, zrzuty ekranu czy logi.
+    \item \textbf{Możliwość szybkiej dystrybucji} – w przypadku pozytywnego przejścia testów, aplikacja może być automatycznie wdrożona (ang. \emph{continuous delivery}) na docelowe środowisko.
+    \item \textbf{Elastyczność} – narzędzia CI/CD pozwalają na uruchamianie testów w różnych wariantach, konfiguracjach przeglądarek czy systemach operacyjnych.
+\end{itemize}
+
+\subsection*{Wyzwania i dalsze możliwości rozwoju}
+\begin{itemize}
+    \item \textbf{Konfiguracja środowisk} – niekiedy wymagana jest prekonfiguracja usług (np. bazy danych, mikroserwisów), co zwiększa poziom złożoności.
+    \item \textbf{Czas wykonania testów} – duże projekty posiadające setki testów E2E mogą generować długi czas budowy. Rozwiązaniem jest równoległe uruchamianie i skalowanie, np. na klastrze Kubernetes.
+    \item \textbf{Utrzymanie testów} – wraz z rozwojem aplikacji rośnie liczba testów i ich poziom skomplikowania. Testy muszą być regularnie aktualizowane, aby nie blokowały procesu wdrożenia fałszywymi alarmami.
+\end{itemize}
+
+\bigskip
+\noindent
+\textbf{Podsumowując}, włączenie testów automatycznych do procesu CI/CD stanowi nieodzowny element profesjonalnego cyklu wytwarzania oprogramowania, zapewniając ciągłą weryfikację jakości i szybką detekcję błędów. Integracja z narzędziami typu GitLab CI, GitHub Actions czy Jenkins umożliwia standaryzację procesu testowania, a także automatyzację raportowania wyników i uproszczoną ścieżkę wdrożenia na środowiska testowe oraz produkcyjne.
 
 \chapter{Strategie generacji testów}
 {Przedstaw wybrane podejścia do automatycznego lub półautomatycznego generowania testów.}
