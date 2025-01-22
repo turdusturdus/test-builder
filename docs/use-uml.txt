@@ -1,0 +1,50 @@
+actor Programista
+actor "System CI/CD" as CI_CD <<service>>
+
+rectangle "Konfiguracja systemu" as Konfiguracja {
+    usecase "Modyfikuj pliki konfiguracyjne" as UC_KonfigurujBiblioteke
+    usecase "Twórz pipeline\nw .gitlab-ci.yml" as UC_TworzPipeline
+    usecase "Twórz pliki mock" as UC_TworzMocki
+    usecase "Twórz skrypty testowe" as UC_TworzSkrypty
+}
+
+rectangle "Zarządzanie testami (CLI)" as Zarzadzanie {
+    usecase "Uruchom test manager" as UC_UruchomManager
+    usecase "Generuj kod testowy\nza pomocą codegen" as UC_GenerujKod
+    usecase "Modyfikuj/usuń interakcje\ntestowe" as UC_ModyfikujInterakcje
+}
+
+rectangle "Testowanie" as Testowanie {
+    usecase "Uruchom testy\nw trybie console lub UI" as UC_UruchomTesty
+    usecase "Waliduj mocki\n(mockTest.js)" as UC_WalidujMocki
+    usecase "Generuj zrzuty ekranu" as UC_GenerujZrzuty
+    usecase "Porównuj zrzuty ekranu" as UC_PorownajZrzuty
+    usecase "Generuj raporty\nz testów" as UC_GenerujRaporty
+    usecase "Przeglądaj raporty\nz testów" as UC_PrzejrzyjRaporty
+}
+
+' Powiązania z Konfiguracją
+Programista --> UC_KonfigurujBiblioteke
+Programista --> UC_TworzPipeline
+Programista --> UC_TworzMocki
+Programista --> UC_TworzSkrypty
+
+' Główne akcje Programisty
+Programista --> UC_UruchomTesty
+Programista --> UC_PrzejrzyjRaporty
+Programista --> UC_WalidujMocki
+Programista --> UC_UruchomManager
+
+' Wewnątrz testManager (CLI) mamy include na operacje codegen i modyfikację interakcji
+UC_UruchomManager .> UC_GenerujKod : <<include>>
+UC_UruchomManager .> UC_ModyfikujInterakcje : <<include>>
+
+' System CI/CD również może uruchamiać testy i walidację mocków
+CI_CD --> UC_UruchomTesty
+CI_CD --> UC_WalidujMocki
+
+' Uruchamiane testy wykorzystują dodatkowe kroki (includes)
+UC_UruchomTesty .> UC_GenerujZrzuty : <<include>>
+UC_UruchomTesty .> UC_PorownajZrzuty : <<include>>
+UC_UruchomTesty .> UC_GenerujRaporty : <<include>>
+@enduml

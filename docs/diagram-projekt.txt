@@ -1,0 +1,69 @@
+classDiagram
+    direction LR
+
+    %% ------------------------------------------
+    %% Screenshot builder & Tests
+    %% ------------------------------------------
+    class ScreenshotTestBuilder {
+        <<builder>>
+        + only()
+        + forPage(pageRoute, customViewName)
+        + forViewports(viewport)
+        + forColorSchemes(colorSchemes)
+        + setPageInteraction(pageInteraction)
+        + test(variantName)
+        + exportState()
+        + getVariantState(variantName)
+    }
+    
+    class Tests {
+        <<testy>>
+        - *.spec.js
+    }
+
+    %% ------------------------------------------
+    %% Test Orchestration
+    %% ------------------------------------------
+    class TestManager {
+        <<zarządzanie>>
+        + runTestManager()
+    }
+
+    class Codegen {
+        <<generowanie testów>>
+        + codegenAndExtract(pageUrl)
+        Generator kodu interakcji z aplikacją webową
+    }
+
+    class Config {
+        <<konfiguracja>>
+        + config.js
+        + playwright.config.js
+        + docker-compose.playwright.yml
+        + package.json
+    }
+
+    %% ------------------------------------------
+    %% Mocking & Validation
+    %% ------------------------------------------
+    class MockAPI {
+        <<mocking>>
+        + mockApi
+        + mockApiPresets
+    }
+
+    class MockTest {
+        <<walidacja>>
+    }
+
+    %% ------------------------------------------
+    %% Relationships
+    %% ------------------------------------------
+    ScreenshotTestBuilder ..> MockAPI : ładuje
+    ScreenshotTestBuilder ..> Tests : generuje zrzuty ekranu
+
+    TestManager ..> Tests : zarządza
+    TestManager ..> Codegen : używa codegen
+
+    MockTest ..> MockAPI : waliduje
+    Tests ..> ScreenshotTestBuilder : używa do testów zrzutów ekranu
