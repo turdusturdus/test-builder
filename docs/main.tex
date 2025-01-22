@@ -30,17 +30,36 @@ Testy stanowią kluczowy element każdego zaawansowanego oraz dojrzałego system
 Głównym celem omawianej aplikacji będzie wyjście naprzeciw potrzebom ułatwienia tworzenia w krótkim czasie dużej ilości prostych testów tak, by małe i średnie projekty możliwie niskim kosztem uzyskały wysokie pokrycie testowe.
 
 \section{Cel i zakres pracy}
-{W tym podrozdziale możesz krótko opisać najważniejsze cele pracy, czyli np.:
+Celem niniejszej pracy inżynierskiej jest opracowanie narzędzia, które znacząco usprawni proces tworzenia testów automatycznych w projektach webowych. Z tego względu praca skupia się nie tylko na samym wytworzeniu aplikacji, ale również na omówieniu metod i dobrych praktyk towarzyszących procesowi testowania. 
+
+Tworzone oprogramowanie ma rozwiązać przede wszystkim następujące problemy:
 \begin{itemize}
-    \item jakie problemy rozwiązuje tworzone narzędzie,
-    \item z jakimi zagadnieniami z obszaru testowania aplikacji webowych się łączy,
-    \item jaki będzie końcowy rezultat (oprogramowanie, testy, dokumentacja).
+    \item Wysoki próg wejścia w automatyzację testów dla początkujących zespołów – narzędzie powinno dostarczyć przyjazne mechanizmy generowania przykładowych skryptów i scenariuszy testowych.
+    \item Długi czas przygotowywania testów w małych i średnich projektach – planuje się zapewnić funkcje, które przyspieszą proces konfiguracji i pisania testów (np. wstępne generowanie kodu testowego).
+    \item Integracja z istniejącymi technologiami – narzędzie będzie wykorzystywać znane biblioteki (takie jak Selenium lub Playwright) oraz umożliwiać łatwe włączenie do popularnych pipeline’ów CI/CD.
 \end{itemize}
-Warto też wskazać, czy praca skupia się głównie na aspekcie teoretycznym (omówienie technologii) czy praktycznym (implementacja i testy).}
+
+Końcowym rezultatem jest działające oprogramowanie, którego zastosowanie pozwoli na efektywne tworzenie testów automatycznych oraz ich integrację z cyklem wytwarzania oprogramowania. Dokumentacja pracy przybliży dodatkowo zarówno aspekty teoretyczne (przegląd frameworków, omawianie strategii testowania), jak i praktyczne (szczegółowe omówienie kodu, przykłady uruchomienia testów i wdrożenia w środowisku CI/CD).
+
+Zakres opracowania obejmuje zatem:
+\begin{itemize}
+    \item Analizę dostępnych narzędzi i bibliotek testowych dla aplikacji webowych,
+    \item Zaprojektowanie i implementację modularnego narzędzia generującego testy,
+    \item Prezentację możliwych sposobów dalszego rozwoju aplikacji, w tym plan rozbudowy funkcjonalności i integracji z innymi platformami.
+\end{itemize}
 
 \section{Struktura pracy}
-{Przedstaw pokrótce, jak wygląda układ rozdziałów i co czytelnik znajdzie w kolejnych częściach (np. przegląd technologii, strategii testowania, analiza architektury narzędzia, omówienie kodu i przykłady zastosowań).}
+W dalszych rozdziałach zaprezentowano kluczowe elementy związane z projektowaniem i tworzeniem narzędzia do wspierania testów automatycznych:
 
+\begin{itemize}
+    \item \textbf{Rozdział 2} omawia przykłady zastosowań testów automatycznych, przedstawiając ich różnorodność (testy jednostkowe, integracyjne oraz end-to-end).
+    \item \textbf{Rozdział 3} zawiera przegląd popularnych technologii i bibliotek wspierających testowanie aplikacji webowych (m.in. frameworki testowe, narzędzia typu record-and-play, rozwiązania CI/CD).
+    \item \textbf{Rozdział 4} skupia się na różnych strategiach generowania testów, w tym podejściach opartych na rejestrowaniu akcji i modelach systemu.
+    \item \textbf{Rozdział 5} przedstawia architekturę i interfejs tworzonej aplikacji, opisując poszczególne moduły i sposób ich komunikacji.
+    \item \textbf{Rozdział 6} zawiera omówienie kluczowych elementów kodu źródłowego narzędzia oraz przybliża zastosowane biblioteki.
+    \item \textbf{Rozdział 7} prezentuje praktyczne przykłady użycia aplikacji, zarówno w trybie interaktywnym, jak i zintegrowanym w potoku CI/CD.
+    \item \textbf{Rozdział 8} stanowi podsumowanie pracy, w którym zawarto wnioski końcowe dotyczące realizacji założeń oraz wskazano możliwe kierunki rozwoju narzędzia.
+\end{itemize}
 
 \chapter{Przykłady zastosowań testów}
 {W tym rozdziale omówisz kontekst, w którym testy (zwłaszcza automatyczne) są wykorzystywane w praktyce. Możesz przytoczyć zastosowania w różnych typach projektów, skalę i złożoność testów, wpływ na jakość.}
@@ -54,7 +73,6 @@ Warto też wskazać, czy praca skupia się głównie na aspekcie teoretycznym (o
 \section{Testy end-to-end (E2E)}
 {Wyjaśnij, na czym polega koncepcja testów end-to-end w kontekście aplikacji webowych, kiedy i dlaczego warto je stosować oraz jakie narzędzia są do nich najczęściej wykorzystywane.}
 
-
 \chapter{Dostępne technologie}
 {Rozdział poświęcony krótkiej analizie i porównaniu dostępnych narzędzi czy bibliotek wspierających tworzenie i uruchamianie testów dla aplikacji webowych.}
 
@@ -67,7 +85,6 @@ Warto też wskazać, czy praca skupia się głównie na aspekcie teoretycznym (o
 \section{Narzędzia CI/CD}
 {Zasygnalizuj, że w projektach o większej skali testy automatyczne integruje się z pipeline’ami CI/CD (np. GitLab CI, GitHub Actions, Jenkins).}
 
-
 \chapter{Strategie generacji testów}
 {Przedstaw wybrane podejścia do automatycznego lub półautomatycznego generowania testów.}
 
@@ -79,7 +96,6 @@ Warto też wskazać, czy praca skupia się głównie na aspekcie teoretycznym (o
 
 \section{Analiza statyczna i tworzenie testów}
 {Wspomnij, że niektóre narzędzia potrafią analizować kod aplikacji i np. na podstawie ścieżek wywołań generować scenariusze testowe.}
-
 
 \chapter{Architektura oraz interfejs aplikacji}
 {W tym rozdziale opiszesz konstrukcję swojego narzędzia, jego moduły, sposób komunikacji itp.}
@@ -95,7 +111,6 @@ Warto też wskazać, czy praca skupia się głównie na aspekcie teoretycznym (o
     \item kluczowe funkcje (np. generowanie pliku testowego, zapis ustawień).
 \end{itemize}
 Możesz dołączyć zrzuty ekranu i omówić je.}
-
 
 \chapter{Omówienie kodu źródłowego aplikacji}
 {Przedstaw strukturę plików oraz folderów oraz wyjaśnij najważniejsze fragmenty implementacji. Wskaż, które biblioteki z rozdziału o „Dostępnych technologiach” zostały wykorzystane i w jaki sposób.}
@@ -117,7 +132,6 @@ Możesz dołączyć zrzuty ekranu i omówić je.}
 \end{itemize}
 Przedstaw je w formie listingów z krótkim komentarzem.}
 
-
 \chapter{Przykłady użyć aplikacji}
 {W tym rozdziale możesz zaprezentować, jak Twoje narzędzie działa w praktyce.}
 
@@ -127,7 +141,6 @@ Przedstaw je w formie listingów z krótkim komentarzem.}
 \section{Integracja z procesem CI/CD}
 {Wyjaśnij, jak można włączyć wygenerowane testy do automatycznego pipeline’u, np. w GitLab CI, Jenkinsie, itp. Przedstaw przykładowy fragment konfiguracji.}
 
-
 \chapter{Podsumowanie}
 {Na koniec podsumuj swoją pracę, oceń jej efekty i zaproponuj kierunki rozwoju.}
 
@@ -136,7 +149,6 @@ Przedstaw je w formie listingów z krótkim komentarzem.}
 
 \section{Możliwości dalszego rozwoju}
 {Opisz, jakie jeszcze funkcjonalności można by dodać do narzędzia, jakie usprawnienia byłyby przydatne, jakie biblioteki lub technologie mogłyby zostać wykorzystane w przyszłości.}
-
 
 \begin{thebibliography}{9}
     \bibitem{roman2024} Roman, A., \& Zmitrow, K. (2024). \textit{Testowanie oprogramowania w praktyce: studium przypadków 2.0}.
