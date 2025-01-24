@@ -742,8 +742,217 @@ Wszystkie wymienione wyżej biblioteki są zdefiniowane w pliku \texttt{package.
 
 Zastosowanie powyższych bibliotek i narzędzi w sposób synergiczny pozwoliło na uzyskanie rozwiązania, w którym zarówno interaktywna konfiguracja, jak i sam proces testowania (od generowania kodu aż po sprawdzanie poprawności danych) działają płynnie i elastycznie.
 
-\section{Omówienie kluczowych miejsc w kodzie}
-\label{sec:omowienie-miejsc-w-kodzie}
+\subsection{Kluczowe miejsca w kodzie}
+\label{sec:6.3}
+
+W poniższym podrozdziale zaprezentowano i omówiono cztery kluczowe fragmenty kodu źródłowego projektu, które w szczególny sposób ilustrują mechanizmy związane z tworzeniem testów, generowaniem interakcji i mockowaniem odpowiedzi API. Są to:
+
+\begin{itemize}
+  \item metoda \verb|#mockApiCall|,
+  \item metoda \verb|test(variantName)|,
+  \item funkcja \verb|inferSchemaFromJSON(jsonData)|,
+  \item funkcja \verb|codegenAndExtract(pageUrl)|.
+\end{itemize}
+
+Każdy fragment został przytoczony w formie kodu oraz wzbogacony o komentarz wyjaśniający jego działanie i zastosowanie w projekcie.
+
+\subsubsection{Metoda \texttt{\#mockApiCall}}
+\label{sec:mockApiCall}
+
+\begin{verbatim}
+async #mockApiCall(page) {
+  const mockApi = await getMockDataFor(this.#viewName);
+  const { mockApiPresets } = mockApi;
+
+  for (const {
+    endpoint,
+    data,
+    contentType,
+    customQuery = '',
+    apiUrl,
+  } of mockApiPresets.default) {
+    await page.route(
+      `${apiUrl || config.baseApiUrl}/${endpoint}${customQuery}`,
+      async (route) => {
+        if (contentType === 'text/html') {
+          await route.fulfill({
+            contentType: 'text/html',
+            body: data,
+          });
+        } else if (contentType?.startsWith('image/')) {
+          await route.fulfill({
+            contentType: contentType,
+            body: data,
+          });
+        } else {
+          await route.fulfill({ json: data });
+        }
+      }
+    );
+  }
+}
+\end{verbatim}
+
+\noindent
+\textbf{Opis działania:}\\
+Powyższa metoda \verb|#mockApiCall| (zaimplementowana w klasie \verb|ScreenshotTestBuilder|) umożliwia podstawienie zdefiniowanych wcześniej \textit{mocków} API zamiast prawdziwych wywołań sieciowych. Dzięki temu test nie musi odwoływać się do realnego serwera. Mechanizm w kolejnych krokach:
+
+\begin{enumerate}
+  \item Odczytuje dane z pliku \verb|.mock.js| przypisanego do aktualnie testowanego widoku (\verb|this.#viewName|).
+  \item Iteruje po wszystkich wpisach w \verb|mockApiPresets.default|, które opisują m.in. \verb|endpoint|, \verb|contentType| i same \verb|data|.
+  \item Dla każdej ścieżki \verb|endpoint| (oraz parametrów \verb|query|) rejestruje \texttt{page.route}, aby przechwycić żądanie do API w trakcie testu.
+  \item Wywołuje \verb|route.fulfill(...)|, zwracając przygotowany \textit{mock}:
+    \begin{itemize}
+      \item tekst/HTML (\texttt{'text/html'}),
+      \item obraz (\texttt{'image/...'}) lub
+      \item obiekt JSON.
+    \end{itemize}
+\end{enumerate}
+
+Dzięki temu możliwe jest wiarygodne testowanie \textit{front-endu} bez dostępu do prawdziwych zasobów sieciowych, a wyniki testów (np. zrzuty ekranu) nie są zależne od stanu środowiska zewnętrznego.
+
+\subsubsection{Metoda \texttt{test(variantName)}}
+\label{sec:test_variantName}
+
+\begin{verbatim}
+test(variantName) {
+  if (!this.#pageRoute) throw new Error('Page route is not set');
+
+  const isCli = process.env.SCREENSHOT_TEST_BUILDER_CLI === 'true';
+
+  if (!isCli) {
+    const testFunction = this.#onlyThis ? t.only : t;
+
+    const testCases = variantName ? [variantName] : [null];
+    const testState = {
+      pageInteraction: this.#pageInteraction,
+    };
+
+    for (const viewPort of this.#viewport) {
+      for (const colorScheme of this.#colorSchemes) {
+        for (const variant of testCases) {
+          testFunction(
+            this.#getTestDescription(viewPort, colorScheme, variant),
+            async ({ page }) => {
+              await this.#mockApiCall(page);
+              await this.#setViewportFor(viewPort, page);
+              await this.#setColorScheme(colorScheme, page);
+              await page.goto(this.#pageRoute);
+              await testState.pageInteraction?.(page);
+
+              await expect(page).toHaveScreenshot(
+                this.#getReferenceFileFor(viewPort, colorScheme, variant),
+                { fullPage: true }
+              );
+            }
+          );
+        }
+      }
+    }
+  }
+
+  const usedVariantName = variantName || 'main';
+  this.#variantsState[usedVariantName] = this.exportState();
+
+  this.#resetState();
+  return this;
+}
+\end{verbatim}
+
+\noindent
+\textbf{Opis działania:}\\
+Metoda \verb|test(variantName)| pełni kluczową rolę w generowaniu i wykonywaniu właściwych testów w oparciu o Playwright. Każdorazowe wywołanie:
+\begin{itemize}
+  \item Sprawdza, czy określono \verb|this.#pageRoute| (adres strony do odwiedzenia).
+  \item Rozróżnia, czy test ma zostać uruchomiony normalnie, czy w trybie CLI (\texttt{isCli}).
+  \item Dla zadanych kombinacji \verb|viewPort|, \verb|colorSchemes| oraz dla konkretnej nazwy wariantu (\verb|variantName| lub \verb|null|) tworzy wewnątrz pętlę:
+    \begin{itemize}
+      \item \verb|testFunction(...)| to tak naprawdę wywołanie \verb|test(...)| lub \verb|test.only(...)| z Playwright (\verb|t.only|).
+      \item Wywołuje \verb|#mockApiCall|, by \textbf{podmienić} ewentualne wywołania sieciowe.
+      \item Ustawia rozdzielczość (\verb|#setViewportFor|) oraz schemat kolorów (\verb|#setColorScheme|).
+      \item Otwiera stronę \verb|this.#pageRoute| (\verb|page.goto(...)|) i wykonuje \textit{interakcję} (\verb|this.#pageInteraction|).
+      \item Kończy się asercją \verb|expect(page).toHaveScreenshot(...)|, co generuje i porównuje zrzut ekranu.
+    \end{itemize}
+  \item Na zakończenie zapisuje stan konfiguracji (\verb|#variantsState|) i czyści \verb|#pageInteraction| (\verb|#resetState|).
+\end{itemize}
+
+W efekcie programista może wywołać \verb|.test(...)| dla różnych wariantów (np. \texttt{'booking'}), a każdy z nich spowoduje wykonanie jednej lub wielu kombinacji testowych (różne przeglądarki, rozdzielczości, kolory).
+
+\subsubsection{Funkcja \texttt{inferSchemaFromJSON(jsonData)}}
+\label{sec:inferSchemaFromJSON}
+
+\begin{verbatim}
+async function inferSchemaFromJSON(jsonData) {
+  const jsonInput = jsonInputForTargetLanguage('schema');
+  await jsonInput.addSource({
+    name: 'GeneratedSchema',
+    samples: [JSON.stringify(jsonData)],
+  });
+
+  const inputData = new InputData();
+  inputData.addInput(jsonInput);
+
+  const { lines } = await quicktype({
+    inputData,
+    lang: 'schema',
+  });
+
+  return lines.join('\n');
+}
+\end{verbatim}
+
+\noindent
+\textbf{Opis działania:}\\
+Funkcja \verb|inferSchemaFromJSON| (obecna w \texttt{mockTest.js}) korzysta z biblioteki \emph{quicktype-core} w celu automatycznego wyprowadzenia schematu (JSON Schema) na podstawie przykładowych danych JSON. W skrócie:
+
+\begin{enumerate}
+  \item Tworzony jest obiekt \verb|jsonInputForTargetLanguage('schema')|, do którego \emph{dodaje się} przykładowe dane \verb|jsonData|.
+  \item Następnie \verb|inputData| (klasa \verb|InputData| z \emph{quicktype}) zostaje wypełniona tym źródłem.
+  \item Wywołanie \verb|quicktype(...)| generuje linie (tekst) zawierające schemat w formacie JSON Schema.
+  \item Funkcja zwraca całość w formie spójnego łańcucha znaków (\texttt{lines.join('\n')}).
+\end{enumerate}
+
+Ten schemat jest dalej wykorzystywany do walidacji \emph{mocków} w \texttt{mockTest}, aby sprawdzić, czy struktura \texttt{mockApi} \textbf{odpowiada} realnemu formatowi z produkcyjnego API.
+
+\subsubsection{Funkcja \texttt{codegenAndExtract(pageUrl)}}
+\label{sec:codegenAndExtract}
+
+\begin{verbatim}
+export async function codegenAndExtract(pageUrl) {
+  const inputFile = path.join(__dirname, 'input.js');
+
+  try {
+    console.log(`Running playwright codegen for URL: ${pageUrl}`);
+    await executeCommand(
+      `npx playwright codegen ${pageUrl} --output=${inputFile}`
+    );
+    console.log('Playwright codegen completed.');
+
+    const extractedCode = await parseInputFile(inputFile);
+
+    await fs.promises.unlink(inputFile);
+    console.log(`Removed temporary file: ${inputFile}`);
+
+    return extractedCode;
+  } catch (err) {
+    console.error('An error occurred during codegen:', err);
+    throw err;
+  }
+}
+\end{verbatim}
+
+\noindent
+\textbf{Opis działania:}\\
+Funkcja \verb|codegenAndExtract| (z pliku \verb|codegen.js|) stanowi interfejs do wbudowanego w Playwright \texttt{codegen}, który nagrywa akcje wykonywane w przeglądarce:
+
+\begin{enumerate}
+  \item Uruchamia zewnętrzny proces \texttt{npx playwright codegen} dla podanego \verb|pageUrl|, wskazując \verb|--output| na tymczasowy plik \verb|input.js|.
+  \item Po zakończeniu rejestracji \texttt{codegen} wytwarza kod (zwykle zestaw wywołań \verb|page.click(...)|, \verb|page.fill(...)| itp.).
+  \item Następnie \verb|parseInputFile| (wewnętrzna funkcja) wyodrębnia istotne fragmenty ze wspomnianego \verb|input.js|.
+  \item Plik tymczasowy jest usuwany, a funkcja zwraca gotowy kod \emph{(string)} – który może być wstawiony np. do \verb|setPageInteraction| przez \texttt{testManager}.
+\end{enumerate}
+
+Dzięki temu podejściu można \emph{nagrywać} kroki wykonywane na stronie, a następnie z poziomu narzędzia CLI \texttt{testManager} wstrzykiwać ten kod (interakcje) \emph{bezpośrednio} do plików \verb|.spec.js|, co przyspiesza i upraszcza proces tworzenia testów end-to-end.
 
 \chapter{Przykłady użyć aplikacji}
 {W tym rozdziale możesz zaprezentować, jak Twoje narzędzie działa w praktyce.}
