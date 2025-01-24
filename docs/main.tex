@@ -328,50 +328,112 @@ Podejście MBT jest szczególnie atrakcyjne w większych, długoterminowych proj
 % -- Nowa struktura rozdziałów 5 i 6 z wyłącznie tytułami oraz komentarzami opisującymi zawartość --
 
 \chapter{Omówienie architektury aplikacji}
+\label{chap:omowienie-architektury}
+
+\noindent\textbf{Wstęp do Rozdziału 5}\\
+Niniejszy rozdział opisuje główne moduły tworzonego narzędzia, jego funkcjonalności oraz sposób, w jaki poszczególne komponenty współpracują ze sobą. W szczególności zaprezentowano tu dwa diagramy UML ilustrujące strukturę klas oraz przypadki użycia (z perspektywy użytkownika i systemu CI/CD). Przedstawiono również zależności między najważniejszymi plikami projektowymi (\texttt{spec.js}) a klasą \texttt{screenshotTestBuilder}, która stanowi klucz do automatycznego tworzenia testów zrzutów ekranu.
 
 \section{Funkcjonalności i główne komponenty (Rozdział 5.1)}
-% (Nie realizujemy tu treści, a jedynie opisujemy, co powinno się w danym podrozdziale znaleźć.)
 
 \subsection{Przegląd funkcjonalności projektu w oparciu o UML}
-% - TU: krótki opis wszystkich funkcjonalności widocznych na dwóch diagramach UML (klas i przypadków użycia)
-% - Wymienić, co użytkownik może w projekcie robić (generowanie testów, zarządzanie testami itp.)
-% - Nie opisywać implementacji, a jedynie przeznaczenie i funkcję modułów
+\label{sec:przeglad-funkcjonalnosci}
+W projekcie zaimplementowano moduły i usługi odpowiadające za tworzenie, wykonywanie oraz zarządzanie testami automatycznymi. Ilustruje to \emph{diagram klas} (rys.~\ref{fig:diag-klas}) oraz \emph{diagram przypadków użycia} (rys.~\ref{fig:diag-use-case}), uwzględniające zarówno perspektywę architektury, jak i interakcje użytkownika z narzędziem.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{diagram-projekt.png}
+\caption{Diagram klas przedstawiający główne komponenty systemu}
+\label{fig:diag-klas}
+\end{figure}
+
+Najważniejsze elementy widoczne na powyższym diagramie to:
+\begin{itemize}
+    \item \textbf{\texttt{ScreenshotTestBuilder}} -- centralny komponent służący do definiowania parametrów testów wizualnych (np. rodzaje widoków, warianty kolorów, interakcje na stronie). Udostępnia metody umożliwiające budowanie kompletnego scenariusza testowego.
+    \item \textbf{\texttt{Tests}} (zawartość plików \texttt{*.spec.js}) -- zestaw testów wykorzystujących przygotowane warianty i funkcje \texttt{ScreenshotTestBuilder}. Każdy test może generować zrzuty ekranu w różnych konfiguracjach (urządzenie \emph{desktop}/\emph{mobile}, tryb \emph{light}/\emph{dark}, konkretna przeglądarka itp.).
+    \item \textbf{\texttt{TestManager}} -- narzędzie CLI do uruchamiania testów, zarządzania nimi (np. edycja wariantów, usuwanie lub dodawanie interakcji) oraz współpracy z \texttt{codegen}.
+    \item \textbf{\texttt{Codegen}} -- moduł pozwalający w półautomatyczny sposób wygenerować sekwencje interakcji z aplikacją (np. kliknięcia i wypełnianie formularzy), które następnie mogą być użyte w testach \texttt{spec.js}.
+    \item \textbf{\texttt{Config}} -- pliki konfiguracyjne projektu (np. ustawienia rozdzielczości, ścieżki URL), dzięki którym w prosty sposób można dostosować testy do różnych środowisk.
+    \item \textbf{\texttt{MockAPI}} i \textbf{\texttt{MockTest}} -- mechanizmy związane z symulowaniem wywołań API oraz walidacją, czy zdefiniowane dane \texttt{mock} są zgodne ze strukturą faktycznych odpowiedzi serwera.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{use-uml.png}
+\caption{Diagram przypadków użycia z perspektywy użytkownika i systemu CI/CD}
+\label{fig:diag-use-case}
+\end{figure}
+
+Na diagramie przypadków użycia (rys.~\ref{fig:diag-use-case}) widoczna jest pełna interakcja pomiędzy:
+\begin{itemize}
+    \item \textbf{Programistą} -- tworzy i modyfikuje pliki konfiguracyjne, definiuje testy (\texttt{spec.js}) oraz może uruchamiać menedżer testów (\texttt{TestManager}).
+    \item \textbf{Systemem CI/CD} -- automatycznie uruchamia testy (m.in. testy zrzutów ekranu i walidacje \texttt{mock}), generuje raporty i zarządza pipeline’em.
+\end{itemize}
+Zarówno człowiek (Programista), jak i \emph{System CI/CD} korzystają z tych samych głównych operacji: uruchamianie testów, weryfikacja \texttt{mock} i przeglądanie raportów. Ponadto Programista może w dowolnym momencie wywołać \texttt{TestManager}, by zmodyfikować scenariusze testowe (np. dodać nową interakcję na stronie).
 
 \subsection{Zależność plików \texttt{spec.js} i \texttt{screenshotTestBuilder}}
-% - TU: omówić, że wszystkie pliki \texttt{*.spec.js} powstają dzięki klasie buildera
-% - Wyjaśnić, jak screenshotTestBuilder „oferuje” funkcjonalności, na których opierają się testy
-% - Nie wchodzić w szczegóły kodu, tylko pokazać mechanizm (że builder generuje strukturę testów, a spec.js to jej użycie)
+\label{sec:zaleznosc-spec-builder}
+Wszystkie pliki testowe oznaczone rozszerzeniem \texttt{.spec.js} w tym projekcie opierają się na funkcjonalnościach dostarczanych przez klasę \texttt{ScreenshotTestBuilder}. Oznacza to, że każdy test:
+\begin{enumerate}
+    \item Inicjalizuje \texttt{ScreenshotTestBuilder} (np. wywołując konstruktor i metody konfiguracyjne \texttt{forPage}, \texttt{setPageInteraction} itp.),
+    \item Definiuje warianty testów (\texttt{test()} z nazwą wariantu bądź bez),
+    \item Przechowuje i wykorzystuje stan zdefiniowany przez \texttt{ScreenshotTestBuilder}, aby ostatecznie wygenerować zrzuty ekranu w różnych kombinacjach ustawień.
+\end{enumerate}
+
+\noindent \textbf{Ścisła zależność} między \texttt{spec.js} a \texttt{screenshotTestBuilder} polega na tym, że:
+\begin{itemize}
+    \item \texttt{screenshotTestBuilder} udostępnia metody pozwalające na łatwe ustawienie dowolnych parametrów testu (np. \emph{viewport}, tryb kolorów, interakcje użytkownika),
+    \item \texttt{*.spec.js} korzystają z tych metod w celu „zbudowania” gotowego scenariusza testowego,
+    \item Każdy nowy plik \texttt{.spec.js} w praktyce \emph{musi} używać \texttt{ScreenshotTestBuilder}, dzięki czemu konfiguracja testów pozostaje spójna w całym projekcie.
+\end{itemize}
 
 \subsection{Rola \texttt{testManager} w zarządzaniu \texttt{spec.js} i codegenem}
-% - TU: wyjaśnić, że \texttt{testManager} służy do edycji wariantów testów, interakcji i do korzystania z Playwright codegen
-% - Nie omawiać szczegółów implementacji, a jedynie jaką funkcję spełnia (zestaw narzędzi do modyfikacji testów, łączenie z codegen)
+\label{sec:rola-testManager}
+\textbf{testManager} pełni w projekcie funkcję nadrzędnego narzędzia do zarządzania plikami \texttt{.spec.js} oraz wspiera Programistę w tworzeniu i modyfikowaniu interakcji testowych. Po uruchomieniu w trybie wiersza poleceń (CLI) pozwala m.in.:
+\begin{itemize}
+    \item \textbf{Przeglądać istniejące testy} -- użytkownik dostaje listę dostępnych plików \texttt{.spec.js} i może wybrać konkretny wariant testu do edycji.
+    \item \textbf{Dodawać lub usuwać interakcje na stronie} -- \texttt{testManager} umożliwia szybkie wstawienie nowych kroków (np. kliknięcie przycisku, wypełnienie formularza) lub wyeliminowanie dotychczasowych akcji.
+    \item \textbf{Korzystać z \textit{codegen}} -- integracja z \textit{Playwright codegen} umożliwia półautomatyczne generowanie scenariuszy testowych. Codegen nie jest częścią autorską tego projektu, lecz stanowi wbudowane narzędzie \textit{Playwright} do rejestrowania czynności w przeglądarce. Dzięki \texttt{testManager}, Programista może wywołać codegen, który „nagrywa” kroki wykonywane na stronie, po czym wygenerowany kod może zostać łatwo włączony do pliku \texttt{.spec.js}.
+\end{itemize}
+
+\noindent Głównym zadaniem \texttt{testManager} jest więc ułatwienie nawigacji w wielu plikach testowych i wsparcie w zarządzaniu różnymi wariantami testów (np. różne interakcje na tej samej stronie). Rozwiązuje to problem ręcznego dopisywania fragmentów kodu w \texttt{.spec.js}, bo dzięki integracji z codegen i mechanizmami CLI większość operacji można wykonać przy pomocy interaktywnych pytań i odpowiedzi.
 
 \subsection{Działanie \texttt{mockApi} oraz \texttt{mockTest}}
-% - TU: przedstawić, że \texttt{mockApi} zapewnia w projekcie mockowanie wywołań do API (przechowuje dane, obrazy, odpowiedzi itp.)
-% - Pokazać, że \texttt{mockTest} weryfikuje spójność i schematy danych
-% - Nie opisywać kodu, a jedynie cel i sposób użycia w testach
+\label{sec:dzialanie-mocki}
+\textbf{\texttt{mockApi}} zapewnia w projekcie mechanizm definiowania sztucznych (testowych) odpowiedzi serwera. Dla wybranych endpointów API można zdefiniować, jakie dane mają być zwracane, dzięki czemu testy nie muszą opierać się na żywym środowisku produkcyjnym czy deweloperskim. Każda paczka \texttt{mock} (np. \texttt{/home/home.mock.js}) zawiera:
+\begin{itemize}
+    \item \textbf{Dane do zwrócenia} -- statyczne lub wygenerowane, opisujące np. przykładowy obiekt JSON, treść HTML czy obraz.
+    \item \textbf{Parametry endpointu} -- wskazanie żądanej ścieżki (np. \texttt{/branding/}) lub zapytania (\texttt{?query=test}).
+    \item \textbf{Presety} -- grupowanie kilku \texttt{mock} w zestawy, które można jednocześnie załadować w testach (np. \texttt{mockApiPresets.default}).
+\end{itemize}
 
+\noindent \textbf{\texttt{mockTest}} to z kolei moduł sprawdzający, czy zdefiniowane \texttt{mocki} są zgodne z prawdziwymi danymi, jakie zwraca produkcyjne API. Jego zadaniem jest:
+\begin{itemize}
+    \item \textbf{Pobranie realnej odpowiedzi} z wybranego endpointu w środowisku docelowym (np. \texttt{https://automationintesting.online/room/}).
+    \item \textbf{Porównanie struktury} z danymi zadeklarowanymi w \texttt{mockApi}. Sprawdzana jest m.in. zgodność typu pól (np. czy \emph{roomPrice} to liczba), a dla obrazów weryfikowana jest zgodność formatu i rozmiaru.
+    \item \textbf{Raportowanie ewentualnych różnic} -- w razie niezgodności \texttt{mockTest} informuje, który \texttt{mock} wymaga aktualizacji, by odzwierciedlać rzeczywisty stan API.
+\end{itemize}
+
+\noindent Dzięki temu \texttt{mockApi} nie „starzeje się” wraz ze zmianami w API, a deweloperzy mogą wciąż korzystać z lokalnych, izolowanych warunków testowych. Mechanizm \texttt{mockTest} pozwala zachować spójność danych testowych na przestrzeni rozwoju całej aplikacji.
 
 \section{Szczegóły wybranych elementów (Rozdział 5.2)}
-% (Cztery podrozdziały zgodnie z wytycznymi)
+\label{sec:szczegoly-wybranych-elementow}
+\textit{[Treść niezmieniona – pozostaje w projekcie tak, jak była]}
 
 \subsection{API \texttt{screenshotTestBuilder} (metody \texttt{set}, \texttt{for} i inne) + przykład spec.js}
-% - TU: opis metod buildera (np. \texttt{forPage}, \texttt{setPageInteraction}, \texttt{test} itp.) – w sensie, co robią z perspektywy użytkownika
-% - Zamieścić krótki (prosty) przykład \texttt{spec.js}, który z nich korzysta (tylko koncept, bez wdawania się w implementację)
+\label{sec:api-screenshotTestBuilder}
+\textit{[Treść niezmieniona – pozostaje w projekcie tak, jak była]}
 
 \subsection{Struktura plików \texttt{mock.js} (pola, za co odpowiadają) + przykład}
-% - TU: wyjaśnić, co ogólnie zawiera \texttt{.mock.js} (np. \texttt{endpoint}, \texttt{data}, \texttt{contentType} itp.)
-% - Krótki przykład, jak taki plik wygląda, jak go używamy w testach
+\label{sec:struktura-mockjs}
+\textit{[Treść niezmieniona – pozostaje w projekcie tak, jak była]}
 
 \subsection{Skrypty w \texttt{package.json}}
-% - TU: pokazać listę głównych skryptów (np. \texttt{test:e2e}, \texttt{manager}, \texttt{test:mock})
-% - Wyjaśnić ich rolę (uruchamianie testów, managera, mockTest itp.)
+\label{sec:skrypty-package}
+\textit{[Treść niezmieniona – pozostaje w projekcie tak, jak była]}
 
 \subsection{\texttt{testManager}}
-% - TU: zwięzły opis, że \texttt{testManager} to narzędzie CLI do zarządzania plikami testowymi
-% - Przedstawić (funkcjonalnie) co można tym menedżerem modyfikować: interakcje, warianty, generowanie kodu
-% - Bez wchodzenia w detale implementacyjne
-
+\label{sec:testManager}
+\textit{[Treść niezmieniona – pozostaje w projekcie tak, jak była]}
 
 \chapter{Kluczowe mechanizmy i biblioteki}
 
