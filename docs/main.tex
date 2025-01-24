@@ -1150,7 +1150,46 @@ export { mockApi, mockApiPresets };
 Widzimy, że plik \texttt{home.mock.js} eksportuje \texttt{mockApiPresets.default}, dzięki czemu w \texttt{screenshotTestBuilder} można jednocześnie podmienić kilka endpointów (\texttt{/branding/}, \texttt{/room/}, \texttt{/images/room2.jpg}) w trakcie testu E2E, bez potrzeby odwoływania się do prawdziwej bazy danych czy usług backendowych.
 
 \section{Integracja z procesem CI/CD}
-{Wyjaśnij, jak można włączyć wygenerowane testy do automatycznego pipeline’u, np. w GitLab CI, Jenkinsie, itp. Przedstaw przykładowy fragment konfiguracji.}
+\label{subsec:7.2}
+
+W niniejszym podrozdziale przedstawiono przykładową konfigurację \texttt{.gitlab-ci.yml} w celu uruchamiania testów \texttt{e2e} oraz \texttt{mockTest} (zdefiniowanych w pliku \texttt{package.json}) w ramach pipeline w GitLab. Dzięki takiemu podejściu, przy każdym wprowadzeniu zmian w repozytorium, testy będą wykonywane automatycznie, co zapewni stałą kontrolę nad jakością aplikacji.
+
+\begin{verbatim}
+stages:
+  - test
+
+# Uruchamianie testów e2e za pomocą Playwright
+test_e2e:
+  stage: test
+  image: mcr.microsoft.com/playwright:v1.49.1-jammy
+  script:
+    - npm ci
+    - npm run test:e2e
+  artifacts:
+    when: always
+    paths:
+      - playwright-report
+    expire_in: 1 day
+
+# Uruchamianie mockTest w celu weryfikacji plików .mock.js
+test_mock:
+  stage: test
+  image: node:18
+  script:
+    - npm ci
+    - npm run test:mock
+\end{verbatim}
+
+\noindent
+W powyższym przykładzie zdefiniowano jeden \emph{stage} o nazwie \texttt{test}, w ramach którego działają dwa zadania (\emph{jobs}):
+\begin{itemize}
+  \item \texttt{test\_e2e} -- pobiera zależności (\texttt{npm ci}), a następnie uruchamia testy end-to-end (\texttt{npm run test:e2e}) z wykorzystaniem obrazu Dockera, który zawiera środowisko \emph{Playwright}. Po zakończeniu testów artefakty (raporty i zrzuty ekranu) zostają zarchiwizowane (przechowywane przez 1 dzień) w zakładce \emph{Jobs} w GitLab.
+  \item \texttt{test\_mock} -- także pobiera zależności, a następnie wywołuje \texttt{npm run test:mock}, które sprawdza poprawność plików \texttt{.mock.js} względem realnego API (m.in. przy pomocy \texttt{mockTest.js}). Jeśli w \texttt{mockApi} występują niezgodności, zadanie zakończy się niepowodzeniem.
+\end{itemize}
+
+\noindent
+\textbf{Efekt działania pipeline:}  
+Po zaktualizowaniu kodu w repozytorium GitLab automatycznie uruchamia oba zadania w kolejności zdefiniowanej w pliku \texttt{.gitlab-ci.yml}. W przypadku wykrycia błędów (zarówno w testach E2E, jak i w \texttt{mockTest}), pipeline zostaje oznaczony jako \emph{failed}, a deweloperzy mogą przejrzeć logi w GitLab, aby dowiedzieć się, które testy nie przeszły pomyślnie. W efekcie zapewniona jest ciągła walidacja jakości aplikacji: testy \emph{end-to-end} weryfikują rzeczywiste scenariusze działania w przeglądarce, zaś \emph{mockTest} gwarantuje zgodność plików \texttt{.mock.js} ze strukturą aktualnego API.
 
 \chapter{Podsumowanie}
 {Na koniec podsumuj swoją pracę, oceń jej efekty i zaproponuj kierunki rozwoju.}
