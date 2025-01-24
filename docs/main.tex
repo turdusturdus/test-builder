@@ -8,6 +8,7 @@
 \usepackage{hyperref}
 \usepackage{graphicx}
 \usepackage{float}
+\sloppy
 \usepackage{fvextra}
 \usepackage{fancyvrb}
 \RecustomVerbatimEnvironment{verbatim}{Verbatim}{breaklines=true, breakanywhere=true}
@@ -1192,13 +1193,24 @@ W powyższym przykładzie zdefiniowano jeden \emph{stage} o nazwie \texttt{test}
 Po zaktualizowaniu kodu w repozytorium GitLab automatycznie uruchamia oba zadania w kolejności zdefiniowanej w pliku \texttt{.gitlab-ci.yml}. W przypadku wykrycia błędów (zarówno w testach E2E, jak i w \texttt{mockTest}), pipeline zostaje oznaczony jako \emph{failed}, a deweloperzy mogą przejrzeć logi w GitLab, aby dowiedzieć się, które testy nie przeszły pomyślnie. W efekcie zapewniona jest ciągła walidacja jakości aplikacji: testy \emph{end-to-end} weryfikują rzeczywiste scenariusze działania w przeglądarce, zaś \emph{mockTest} gwarantuje zgodność plików \texttt{.mock.js} ze strukturą aktualnego API.
 
 \chapter{Podsumowanie}
-{Na koniec podsumuj swoją pracę, oceń jej efekty i zaproponuj kierunki rozwoju.}
+W niniejszej pracy przedstawiono koncepcję i implementację narzędzia wspomagającego tworzenie testów automatycznych dla aplikacji webowych. Podczas realizacji celu skupiono się na kilku aspektach: generowaniu testów z użyciem podejścia \emph{record-and-play} (\textit{Playwright codegen}), elastycznej konfiguracji \emph{mocków} API oraz integracji z pipeline’ami CI/CD. Projekt ma formę modułowego rozwiązania, w którym podstawową rolę odgrywa \texttt{screenshotTestBuilder} (klasa budująca testy wizualne) oraz \texttt{testManager} (narzędzie CLI do zarządzania plikami \texttt{.spec.js} i interakcjami testowymi).
 
 \section{Wnioski końcowe}
-{Opisz, w jakim stopniu udało się osiągnąć założone cele, co było największym wyzwaniem, co dało najwięcej satysfakcji/rezultatów.}
+Opracowane narzędzie pozwala tworzyć i utrzymywać testy w bardziej zorganizowany sposób, nawet w małych i średnich zespołach. Dzięki funkcji automatycznego nagrywania czynności (\emph{Playwright codegen}) programista nie musi ręcznie pisać skryptów testowych — zamiast tego może „nagrać” interakcje w przeglądarce i w prosty sposób wstawić je do \texttt{.spec.js} za pomocą \texttt{testManager}. Wprowadzenie \texttt{mockTest} z kolei ułatwia dbanie o aktualność \texttt{mocków} względem faktycznego API, co zmniejsza ryzyko, że testy staną się nieadekwatne do stanu produkcyjnego.  
+
+Największym wyzwaniem okazało się zapewnienie spójności między wieloma komponentami (m.in. \texttt{screenshotTestBuilder}, \texttt{mockApi}, \texttt{testManager}, \texttt{codegen}) oraz umożliwienie ich rozszerzania w przyszłości. Istotnym wnioskiem jest też fakt, że jakość i stabilność testów wciąż w dużej mierze zależą od świadomego projektowania scenariuszy i ich regularnej aktualizacji — narzędzie automatyzuje wiele zadań, lecz nie zastępuje w pełni testera czy programisty.
 
 \section{Możliwości dalszego rozwoju}
-{Opisz, jakie jeszcze funkcjonalności można by dodać do narzędzia, jakie usprawnienia byłyby przydatne, jakie biblioteki lub technologie mogłyby zostać wykorzystane w przyszłości.}
+\begin{itemize}
+    \item \textbf{Integracja z innymi frameworkami}: Choć obecnie wykorzystano \emph{Playwright}, narzędzie można wzbogacić o mechanizmy wspierające inne biblioteki (np. \emph{Cypress}), zapewniając szerszy wybór w zależności od preferencji zespołu.
+    \item \textbf{Rozszerzona edycja interakcji}: \texttt{testManager} mógłby oferować interfejs wizualny (np. w trybie webowym) do modyfikacji sekwencji kroków, z podglądem wszystkich akcji i możliwością ich przestawiania.
+    \item \textbf{Dodatkowe formy testów wizualnych}: Obecnie generowane są zrzuty ekranu pełnej strony. Cennym usprawnieniem może być porównywanie wybranych elementów interfejsu (np. wycinek z modalem) lub tworzenie animowanych \emph{gifów} pokazujących interakcje krok po kroku.
+    \item \textbf{Analiza regresji wizualnej w chmurze}: Można zintegrować narzędzie z zewnętrznymi usługami do porównywania obrazów w chmurze (np. \emph{Applitools}), aby odciążyć infrastrukturę lokalną i usprawnić raportowanie różnic.
+    \item \textbf{Weryfikacja dostępności (Accessibility)}: Istnieje potencjał do rozszerzenia testów o automatyczną analizę dostępności (np. integracja z \texttt{@axe-core/playwright}), co umożliwi wychwytywanie problemów już na etapie codziennego \emph{builda}.
+    \item \textbf{Zaawansowane generowanie testów}: Oprócz prostego \emph{record-and-play} można wprowadzić tryb \emph{Model-Based Testing}, w którym narzędzie generowałoby wiele ścieżek przejścia w aplikacji w sposób systematyczny i pokrywający większą liczbę stanów.
+\end{itemize}
+
+Proponowane kierunki rozwoju pozwoliłyby jeszcze bardziej rozszerzyć możliwości narzędzia i uczynić je atrakcyjniejszym zarówno dla zespołów wdrażających podstawową automatyzację testów, jak i tych, które stawiają na kompleksowe, wielopoziomowe podejście do zapewniania jakości.
 
 \begin{thebibliography}{9}
     \bibitem{roman2024} Roman, A., \& Zmitrow, K. (2024). \textit{Testowanie oprogramowania w praktyce: studium przypadków 2.0}.
