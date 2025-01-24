@@ -703,6 +703,45 @@ Dzięki temu mechanizmowi programista nie musi tworzyć wielu osobnych plików t
 \section{Omówienie kluczowych bibliotek}
 \label{sec:omowienie-bibliotek}
 
+W projekcie wykorzystano szereg bibliotek oraz narzędzi, które wspomagają proces automatyzacji testów aplikacji webowych, zarówno od strony przygotowywania i uruchamiania scenariuszy E2E, jak i zarządzania nimi czy walidacji danych zwracanych przez API. Poniżej przedstawiono najważniejsze z nich wraz z opisem roli, jaką pełnią w systemie:
+
+\begin{itemize}
+    \item \textbf{Playwright} (\verb|@playwright/test|) -- podstawowa technologia do testów E2E w tym projekcie. Umożliwia uruchamianie testów w przeglądarkach Chromium, Firefox oraz WebKit. Dostarcza wbudowanego \emph{test runnera}, obsługę zrzutów ekranu, generowanie raportów (także w trybie interfejsu graficznego) oraz narzędzie \emph{codegen} do interaktywnego rejestrowania akcji użytkownika.
+
+    \item \textbf{Inquirer} -- biblioteka do tworzenia interaktywnych menu w wierszu poleceń (CLI). Z jej pomocą zaimplementowano \texttt{testManager}, który pyta użytkownika o wybór plików \texttt{.spec.js}, wariantów testów oraz pozwala na zarządzanie interakcjami. 
+
+    \item \textbf{Chalk} -- pakiet do kolorowania i formatowania tekstu w konsoli. Dzięki niemu \texttt{testManager} może wyświetlać wyróżnione komunikaty (np.~z powodzeniem, ostrzeżenia, błędy), zwiększając czytelność i wygodę obsługi narzędzia.
+
+    \item \textbf{Prettier} -- narzędzie do automatycznego formatowania kodu JavaScript/TypeScript. Po nagraniu akcji w \emph{Playwright codegen}, \texttt{testManager} może wywołać \texttt{prettier} w celu znormalizowania stylu wygenerowanego kodu i wstawienia go w pliku \texttt{.spec.js}. Ułatwia to utrzymanie jednolitego stylu całego repozytorium.
+
+    \item \textbf{Babel} (w szczególności \verb|@babel/parser|, \verb|@babel/traverse|, \verb|@babel/types| i \verb|@babel/generator|) -- zestaw narzędzi do parsowania kodu JavaScript i dokonywania w nim modyfikacji w postaci drzewa AST (\emph{Abstract Syntax Tree}). W \texttt{testManager} wykorzystuje się Babel do:
+    \begin{enumerate}
+        \item Odczytu istniejących plików \texttt{.spec.js} i odnajdywania miejsc, w których występują wywołania \texttt{test()} oraz \texttt{setPageInteraction(...)}.
+        \item Nadpisywania fragmentów kodu, np.~wstawiania nowo wygenerowanej sekwencji akcji z \emph{codegen} (tj.~ciągu wywołań \verb|page.click(...)|, \verb|page.fill(...)| itp.).
+        \item Generowania zaktualizowanego pliku testowego, który zostaje ostatecznie zapisany na dysku.
+    \end{enumerate}
+
+    \item \textbf{cli-table3} -- pakiet pozwalający wyświetlać w konsoli dane w formie tabelarycznej. W \texttt{testManager} używany do prezentacji aktualnej konfiguracji wybranego wariantu testu (np.~rozmiar viewportu, kolor, nazwa interakcji). Ułatwia to szybki wgląd w kluczowe parametry.
+
+    \item \textbf{AJV} (\emph{Another JSON Validator}) oraz \textbf{ajv-formats} -- biblioteki do walidacji struktury danych w formacie JSON. Służą one \texttt{mockTest} do sprawdzania, czy dane zwracane przez \texttt{mockApi} pokrywają się ze schematem danych realnego API.
+
+    \item \textbf{quicktype-core} -- narzędzie umożliwiające na podstawie przykładowego JSON-u (pobranego z produkcyjnego API) automatyczne wyprowadzenie schematu (\emph{JSON Schema}), który następnie jest weryfikowany z \texttt{mockApi}. \texttt{mockTest} korzysta z \emph{quicktype-core} do inferencji tego schematu w locie i porównywania go z danymi zadeklarowanymi w pliku \texttt{.mock.js}.
+
+    \item \textbf{node-fetch} -- biblioteka do wykonywania zapytań HTTP po stronie Node.js. Wykorzystywana w \texttt{mockTest} przy pobieraniu realnych danych z API, aby sprawdzić aktualną strukturę i porównać ją z zawartością \texttt{mockApi}.
+
+    \item \textbf{Docker / Docker-Compose} -- środowisko konteneryzacji (z plikiem \texttt{docker-compose.playwright.yml}), w którym można uruchomić testy E2E w odizolowanym kontenerze. Pozwala to zapewnić spójne i powtarzalne warunki uruchomieniowe (m.in.~zdefiniowana wersja \verb|mcr.microsoft.com/playwright|). 
+
+\end{itemize}
+
+Wszystkie wymienione wyżej biblioteki są zdefiniowane w pliku \texttt{package.json} (sekcja \texttt{dependencies}) i instalowane wraz z projektem (\verb|npm install|). Ich dobór podyktowany był dążeniem do zapewnienia:
+\begin{itemize}
+    \item \textbf{Spójnego ekosystemu testowego} -- \emph{Playwright} gwarantuje solidną podstawę do automatyzacji E2E, wspieraną przez narzędzia do walidacji i generowania scenariuszy.
+    \item \textbf{Wysokiej czytelności i automatyzacji} -- \emph{Inquirer}, \emph{Chalk} i \emph{cli-table3} umożliwiają tworzenie rozbudowanego, przyjaznego CLI, a \emph{Babel} i \emph{Prettier} pozwalają na automatyczną modyfikację i formatowanie kodu.
+    \item \textbf{Łatwej integracji z różnymi środowiskami} -- \emph{Docker-Compose} w połączeniu z obrazem \texttt{playwright} ułatwia uruchamianie testów na dowolnej maszynie, w tym w pipeline’ach CI/CD.
+\end{itemize}
+
+Zastosowanie powyższych bibliotek i narzędzi w sposób synergiczny pozwoliło na uzyskanie rozwiązania, w którym zarówno interaktywna konfiguracja, jak i sam proces testowania (od generowania kodu aż po sprawdzanie poprawności danych) działają płynnie i elastycznie.
+
 \section{Omówienie kluczowych miejsc w kodzie}
 \label{sec:omowienie-miejsc-w-kodzie}
 
