@@ -330,13 +330,11 @@ Podejście MBT jest szczególnie atrakcyjne w większych, długoterminowych proj
 \chapter{Omówienie architektury aplikacji}
 \label{chap:omowienie-architektury}
 
-\noindent\textbf{Wstęp do Rozdziału 5}\\
 Niniejszy rozdział opisuje główne moduły tworzonego narzędzia, jego funkcjonalności oraz sposób, w jaki poszczególne komponenty współpracują ze sobą. W szczególności zaprezentowano tu dwa diagramy UML ilustrujące strukturę klas oraz przypadki użycia (z perspektywy użytkownika i systemu CI/CD). Przedstawiono również zależności między najważniejszymi plikami projektowymi (\texttt{spec.js}) a klasą \texttt{screenshotTestBuilder}, która stanowi klucz do automatycznego tworzenia testów zrzutów ekranu.
 
 \section{Funkcjonalności i główne komponenty (Rozdział 5.1)}
-
-\subsection{Przegląd funkcjonalności projektu w oparciu o UML}
 \label{sec:przeglad-funkcjonalnosci}
+
 W projekcie zaimplementowano moduły i usługi odpowiadające za tworzenie, wykonywanie oraz zarządzanie testami automatycznymi. Ilustruje to \emph{diagram klas} (rys.~\ref{fig:diag-klas}) oraz \emph{diagram przypadków użycia} (rys.~\ref{fig:diag-use-case}), uwzględniające zarówno perspektywę architektury, jak i interakcje użytkownika z narzędziem.
 
 \begin{figure}[H]
@@ -348,12 +346,12 @@ W projekcie zaimplementowano moduły i usługi odpowiadające za tworzenie, wyko
 
 Najważniejsze elementy widoczne na powyższym diagramie to:
 \begin{itemize}
-    \item \textbf{\texttt{ScreenshotTestBuilder}} -- centralny komponent służący do definiowania parametrów testów wizualnych (np. rodzaje widoków, warianty kolorów, interakcje na stronie). Udostępnia metody umożliwiające budowanie kompletnego scenariusza testowego.
-    \item \textbf{\texttt{Tests}} (zawartość plików \texttt{*.spec.js}) -- zestaw testów wykorzystujących przygotowane warianty i funkcje \texttt{ScreenshotTestBuilder}. Każdy test może generować zrzuty ekranu w różnych konfiguracjach (urządzenie \emph{desktop}/\emph{mobile}, tryb \emph{light}/\emph{dark}, konkretna przeglądarka itp.).
-    \item \textbf{\texttt{TestManager}} -- narzędzie CLI do uruchamiania testów, zarządzania nimi (np. edycja wariantów, usuwanie lub dodawanie interakcji) oraz współpracy z \texttt{codegen}.
-    \item \textbf{\texttt{Codegen}} -- moduł pozwalający w półautomatyczny sposób wygenerować sekwencje interakcji z aplikacją (np. kliknięcia i wypełnianie formularzy), które następnie mogą być użyte w testach \texttt{spec.js}.
-    \item \textbf{\texttt{Config}} -- pliki konfiguracyjne projektu (np. ustawienia rozdzielczości, ścieżki URL), dzięki którym w prosty sposób można dostosować testy do różnych środowisk.
-    \item \textbf{\texttt{MockAPI}} i \textbf{\texttt{MockTest}} -- mechanizmy związane z symulowaniem wywołań API oraz walidacją, czy zdefiniowane dane \texttt{mock} są zgodne ze strukturą faktycznych odpowiedzi serwera.
+   \item \textbf{\texttt{ScreenshotTestBuilder}} -- centralny komponent służący do definiowania parametrów testów wizualnych (np.~rodzaje widoków, warianty kolorów, interakcje na stronie). Udostępnia metody umożliwiające budowanie kompletnego scenariusza testowego.
+   \item \textbf{\texttt{Tests}} (zawartość plików \texttt{*.spec.js}) -- zestaw testów wykorzystujących przygotowane warianty i funkcje \texttt{ScreenshotTestBuilder}. Każdy test może generować zrzuty ekranu w różnych konfiguracjach (urządzenie \emph{desktop}/\emph{mobile}, tryb \emph{light}/\emph{dark}, konkretna przeglądarka itp.).
+   \item \textbf{\texttt{TestManager}} -- narzędzie CLI do uruchamiania testów, zarządzania nimi (np.~edycja wariantów, usuwanie lub dodawanie interakcji) oraz współpracy z \texttt{codegen}.
+   \item \textbf{\texttt{Codegen}} -- moduł pozwalający w półautomatyczny sposób wygenerować sekwencje interakcji z aplikacją (np.~kliknięcia i wypełnianie formularzy), które następnie mogą być użyte w testach \texttt{spec.js}.
+   \item \textbf{\texttt{Config}} -- pliki konfiguracyjne projektu (np.~ustawienia rozdzielczości, ścieżki URL), dzięki którym w prosty sposób można dostosować testy do różnych środowisk.
+   \item \textbf{\texttt{MockAPI}} i \textbf{\texttt{MockTest}} -- mechanizmy związane z symulowaniem wywołań API oraz walidacją, czy zdefiniowane dane \texttt{mock} są zgodne ze strukturą faktycznych odpowiedzi serwera.
 \end{itemize}
 
 \begin{figure}[H]
@@ -365,75 +363,250 @@ Najważniejsze elementy widoczne na powyższym diagramie to:
 
 Na diagramie przypadków użycia (rys.~\ref{fig:diag-use-case}) widoczna jest pełna interakcja pomiędzy:
 \begin{itemize}
-    \item \textbf{Programistą} -- tworzy i modyfikuje pliki konfiguracyjne, definiuje testy (\texttt{spec.js}) oraz może uruchamiać menedżer testów (\texttt{TestManager}).
-    \item \textbf{Systemem CI/CD} -- automatycznie uruchamia testy (m.in. testy zrzutów ekranu i walidacje \texttt{mock}), generuje raporty i zarządza pipeline’em.
+   \item \textbf{Programistą} -- tworzy i modyfikuje pliki konfiguracyjne, definiuje testy (\texttt{spec.js}) oraz może uruchamiać menedżer testów (\texttt{TestManager}).
+   \item \textbf{Systemem CI/CD} -- automatycznie uruchamia testy (m.in.~testy zrzutów ekranu i walidacje \texttt{mock}), generuje raporty i zarządza pipeline’em.
 \end{itemize}
-Zarówno człowiek (Programista), jak i \emph{System CI/CD} korzystają z tych samych głównych operacji: uruchamianie testów, weryfikacja \texttt{mock} i przeglądanie raportów. Ponadto Programista może w dowolnym momencie wywołać \texttt{TestManager}, by zmodyfikować scenariusze testowe (np. dodać nową interakcję na stronie).
+Zarówno człowiek (Programista), jak i \emph{System CI/CD} korzystają z tych samych głównych operacji: uruchamianie testów, weryfikacja \texttt{mock} i przeglądanie raportów. Ponadto Programista może w dowolnym momencie wywołać \texttt{TestManager}, by zmodyfikować scenariusze testowe (np.~dodać nową interakcję na stronie).
 
 \subsection{Zależność plików \texttt{spec.js} i \texttt{screenshotTestBuilder}}
 \label{sec:zaleznosc-spec-builder}
+
 Wszystkie pliki testowe oznaczone rozszerzeniem \texttt{.spec.js} w tym projekcie opierają się na funkcjonalnościach dostarczanych przez klasę \texttt{ScreenshotTestBuilder}. Oznacza to, że każdy test:
 \begin{enumerate}
-    \item Inicjalizuje \texttt{ScreenshotTestBuilder} (np. wywołując konstruktor i metody konfiguracyjne \texttt{forPage}, \texttt{setPageInteraction} itp.),
-    \item Definiuje warianty testów (\texttt{test()} z nazwą wariantu bądź bez),
-    \item Przechowuje i wykorzystuje stan zdefiniowany przez \texttt{ScreenshotTestBuilder}, aby ostatecznie wygenerować zrzuty ekranu w różnych kombinacjach ustawień.
+   \item Inicjalizuje \texttt{ScreenshotTestBuilder} (np.~wywołując konstruktor i metody konfiguracyjne \texttt{forPage}, \texttt{setPageInteraction} itp.),
+   \item Definiuje warianty testów (\texttt{test()} z nazwą wariantu bądź bez),
+   \item Przechowuje i wykorzystuje stan zdefiniowany przez \texttt{ScreenshotTestBuilder}, aby ostatecznie wygenerować zrzuty ekranu w różnych kombinacjach ustawień.
 \end{enumerate}
 
 \noindent \textbf{Ścisła zależność} między \texttt{spec.js} a \texttt{screenshotTestBuilder} polega na tym, że:
 \begin{itemize}
-    \item \texttt{screenshotTestBuilder} udostępnia metody pozwalające na łatwe ustawienie dowolnych parametrów testu (np. \emph{viewport}, tryb kolorów, interakcje użytkownika),
-    \item \texttt{*.spec.js} korzystają z tych metod w celu „zbudowania” gotowego scenariusza testowego,
-    \item Każdy nowy plik \texttt{.spec.js} w praktyce \emph{musi} używać \texttt{ScreenshotTestBuilder}, dzięki czemu konfiguracja testów pozostaje spójna w całym projekcie.
+   \item \texttt{screenshotTestBuilder} udostępnia metody pozwalające na łatwe ustawienie dowolnych parametrów testu (np.~\emph{viewport}, tryb kolorów, interakcje użytkownika),
+   \item \texttt{*.spec.js} korzystają z tych metod w celu „zbudowania” gotowego scenariusza testowego,
+   \item Każdy nowy plik \texttt{.spec.js} w praktyce \emph{musi} używać \texttt{ScreenshotTestBuilder}, dzięki czemu konfiguracja testów pozostaje spójna w całym projekcie.
 \end{itemize}
 
 \subsection{Rola \texttt{testManager} w zarządzaniu \texttt{spec.js} i codegenem}
 \label{sec:rola-testManager}
-\textbf{testManager} pełni w projekcie funkcję nadrzędnego narzędzia do zarządzania plikami \texttt{.spec.js} oraz wspiera Programistę w tworzeniu i modyfikowaniu interakcji testowych. Po uruchomieniu w trybie wiersza poleceń (CLI) pozwala m.in.:
+
+\textbf{\texttt{testManager}} pełni w projekcie funkcję nadrzędnego narzędzia do zarządzania plikami \texttt{.spec.js} oraz wspiera Programistę w tworzeniu i modyfikowaniu interakcji testowych. Po uruchomieniu w trybie wiersza poleceń (CLI) pozwala m.in.:
 \begin{itemize}
-    \item \textbf{Przeglądać istniejące testy} -- użytkownik dostaje listę dostępnych plików \texttt{.spec.js} i może wybrać konkretny wariant testu do edycji.
-    \item \textbf{Dodawać lub usuwać interakcje na stronie} -- \texttt{testManager} umożliwia szybkie wstawienie nowych kroków (np. kliknięcie przycisku, wypełnienie formularza) lub wyeliminowanie dotychczasowych akcji.
-    \item \textbf{Korzystać z \textit{codegen}} -- integracja z \textit{Playwright codegen} umożliwia półautomatyczne generowanie scenariuszy testowych. Codegen nie jest częścią autorską tego projektu, lecz stanowi wbudowane narzędzie \textit{Playwright} do rejestrowania czynności w przeglądarce. Dzięki \texttt{testManager}, Programista może wywołać codegen, który „nagrywa” kroki wykonywane na stronie, po czym wygenerowany kod może zostać łatwo włączony do pliku \texttt{.spec.js}.
+   \item \textbf{Przeglądać istniejące testy} -- użytkownik dostaje listę dostępnych plików \texttt{.spec.js} i może wybrać konkretny wariant testu do edycji.
+   \item \textbf{Dodawać lub usuwać interakcje na stronie} -- \texttt{testManager} umożliwia szybkie wstawienie nowych kroków (np.~kliknięcie przycisku, wypełnienie formularza) lub wyeliminowanie dotychczasowych akcji.
+   \item \textbf{Korzystać z \emph{codegen}} -- integracja z \emph{Playwright codegen} umożliwia półautomatyczne generowanie scenariuszy testowych. Codegen nie jest częścią autorską tego projektu, lecz stanowi wbudowane narzędzie \emph{Playwright} do rejestrowania czynności w przeglądarce. Dzięki \texttt{testManager}, Programista może wywołać codegen, który „nagrywa” kroki wykonywane na stronie, po czym wygenerowany kod może zostać łatwo włączony do pliku \texttt{.spec.js}.
 \end{itemize}
 
-\noindent Głównym zadaniem \texttt{testManager} jest więc ułatwienie nawigacji w wielu plikach testowych i wsparcie w zarządzaniu różnymi wariantami testów (np. różne interakcje na tej samej stronie). Rozwiązuje to problem ręcznego dopisywania fragmentów kodu w \texttt{.spec.js}, bo dzięki integracji z codegen i mechanizmami CLI większość operacji można wykonać przy pomocy interaktywnych pytań i odpowiedzi.
+Głównym zadaniem \texttt{testManager} jest więc ułatwienie nawigacji w wielu plikach testowych i wsparcie w zarządzaniu różnymi wariantami testów (np.~różne interakcje na tej samej stronie). Rozwiązuje to problem ręcznego dopisywania fragmentów kodu w \texttt{.spec.js}, bo dzięki integracji z codegen i mechanizmami CLI większość operacji można wykonać przy pomocy interaktywnych pytań i odpowiedzi.
 
 \subsection{Działanie \texttt{mockApi} oraz \texttt{mockTest}}
 \label{sec:dzialanie-mocki}
-\textbf{\texttt{mockApi}} zapewnia w projekcie mechanizm definiowania sztucznych (testowych) odpowiedzi serwera. Dla wybranych endpointów API można zdefiniować, jakie dane mają być zwracane, dzięki czemu testy nie muszą opierać się na żywym środowisku produkcyjnym czy deweloperskim. Każda paczka \texttt{mock} (np. \texttt{/home/home.mock.js}) zawiera:
+
+\textbf{\texttt{mockApi}} zapewnia w projekcie mechanizm definiowania sztucznych (testowych) odpowiedzi serwera. Dla wybranych endpointów API można zdefiniować, jakie dane mają być zwracane, dzięki czemu testy nie muszą opierać się na żywym środowisku produkcyjnym czy deweloperskim. Każda paczka \texttt{mock} (np.~\texttt{/home/home.mock.js}) zawiera:
 \begin{itemize}
-    \item \textbf{Dane do zwrócenia} -- statyczne lub wygenerowane, opisujące np. przykładowy obiekt JSON, treść HTML czy obraz.
-    \item \textbf{Parametry endpointu} -- wskazanie żądanej ścieżki (np. \texttt{/branding/}) lub zapytania (\texttt{?query=test}).
-    \item \textbf{Presety} -- grupowanie kilku \texttt{mock} w zestawy, które można jednocześnie załadować w testach (np. \texttt{mockApiPresets.default}).
+   \item \textbf{Dane do zwrócenia} -- statyczne lub wygenerowane, opisujące np.~przykładowy obiekt JSON, treść HTML czy obraz,
+   \item \textbf{Parametry endpointu} -- wskazanie żądanej ścieżki (np.~\texttt{/branding/}) lub zapytania (\texttt{?query=test}),
+   \item \textbf{Presety} -- grupowanie kilku \texttt{mock} w zestawy, które można jednocześnie załadować w testach (np.~\texttt{mockApiPresets.default}).
 \end{itemize}
 
 \noindent \textbf{\texttt{mockTest}} to z kolei moduł sprawdzający, czy zdefiniowane \texttt{mocki} są zgodne z prawdziwymi danymi, jakie zwraca produkcyjne API. Jego zadaniem jest:
 \begin{itemize}
-    \item \textbf{Pobranie realnej odpowiedzi} z wybranego endpointu w środowisku docelowym (np. \texttt{https://automationintesting.online/room/}).
-    \item \textbf{Porównanie struktury} z danymi zadeklarowanymi w \texttt{mockApi}. Sprawdzana jest m.in. zgodność typu pól (np. czy \emph{roomPrice} to liczba), a dla obrazów weryfikowana jest zgodność formatu i rozmiaru.
-    \item \textbf{Raportowanie ewentualnych różnic} -- w razie niezgodności \texttt{mockTest} informuje, który \texttt{mock} wymaga aktualizacji, by odzwierciedlać rzeczywisty stan API.
+   \item \textbf{Pobranie realnej odpowiedzi} z wybranego endpointu w środowisku docelowym,
+   \item \textbf{Porównanie struktury} z danymi zadeklarowanymi w \texttt{mockApi} (sprawdzana jest m.in.~zgodność typu pól czy format obrazów),
+   \item \textbf{Raportowanie ewentualnych różnic} -- w razie niezgodności \texttt{mockTest} wskazuje, który \texttt{mock} wymaga aktualizacji, by odzwierciedlać rzeczywisty stan API.
 \end{itemize}
 
-\noindent Dzięki temu \texttt{mockApi} nie „starzeje się” wraz ze zmianami w API, a deweloperzy mogą wciąż korzystać z lokalnych, izolowanych warunków testowych. Mechanizm \texttt{mockTest} pozwala zachować spójność danych testowych na przestrzeni rozwoju całej aplikacji.
 
 \section{Szczegóły wybranych elementów (Rozdział 5.2)}
 \label{sec:szczegoly-wybranych-elementow}
-\textit{[Treść niezmieniona – pozostaje w projekcie tak, jak była]}
 
 \subsection{API \texttt{screenshotTestBuilder} (metody \texttt{set}, \texttt{for} i inne) + przykład spec.js}
 \label{sec:api-screenshotTestBuilder}
-\textit{[Treść niezmieniona – pozostaje w projekcie tak, jak była]}
+W tej części opisano najważniejsze metody dostępne w klasie \texttt{ScreenshotTestBuilder}. Dzięki nim można w przejrzysty sposób zdefiniować konfigurację testów wizualnych:
+
+\begin{itemize}
+  \item \texttt{only()} -- pozwala oznaczyć dany zestaw testów jako wykonywany \emph{wyłącznie} (z pominięciem innych).  
+  \item \texttt{forPage(pageRoute, customViewName?)} -- określa, jaką trasę (URL) ma odwiedzić test i ew.~jaką nazwę widoku nadać danej konfiguracji (np.~\texttt{"home"}).
+  \item \texttt{forViewports(viewport[])} -- ustawia listę viewportów (np.~\texttt{["desktop","mobile"]}).
+  \item \texttt{forColorSchemes(colorSchemes[])} -- ustawia listę trybów kolorystycznych (np.~\texttt{["light","dark"]}).
+  \item \texttt{setPageInteraction(async (page) => \{\ldots\})} -- umożliwia zdefiniowanie akcji wykonywanych na stronie przed zrobieniem zrzutu ekranu (np.~kliknięcie przycisku).
+  \item \texttt{test(variantName?)} -- finalizuje konfigurację i tworzy właściwe testy (w kontekście \texttt{Playwright}). Parametr \texttt{variantName} służy do rozróżnienia różnych wariantów testu (np.~\texttt{"booking"}).
+  \item \texttt{exportState()} -- zwraca obiekt z aktualnymi ustawieniami (np.~\texttt{pageRoute}, \texttt{viewport}, \texttt{colorSchemes}, \texttt{pageInteraction} itp.). Mechanizm wykorzystywany np.~przez \texttt{testManager}.
+  \item \texttt{getVariantState(variantName)} -- zwraca zapisany stan konfiguracji dla wybranego \texttt{variantName}.
+\end{itemize}
+
+\noindent Przykładowy plik \texttt{example.spec.js}:
+
+\begin{verbatim}
+//@ts-check
+import ScreenshotTest from '../screenshotTestBuilder.js';
+
+new ScreenshotTest()
+  .forPage('/', 'home')          // Ustawia główny adres / i nazywa ten widok "home"
+  .forViewports(['desktop','mobile'])
+  .forColorSchemes(['light','dark'])
+  .setPageInteraction(async (page) => {
+    await page.click('text=Akceptuj Cookies');
+  })
+  .test('accept-cookies')       // Pierwszy wariant testu (nazwa "accept-cookies")
+
+  // Drugi wariant testu, inna interakcja
+  .setPageInteraction(async (page) => {
+    await page.click('text=Otwórz Menu');
+  })
+  .test('open-menu');
+\end{verbatim}
+
+W powyższym przykładzie zdefiniowano dwa warianty testu (\texttt{accept-cookies} oraz \texttt{open-menu}). Każdy z nich zostanie uruchomiony w dwóch trybach widoku (\emph{desktop}, \emph{mobile}) oraz dla dwóch schematów kolorów (\emph{light}, \emph{dark}). Łącznie wygeneruje to kilka zrzutów ekranu.
 
 \subsection{Struktura plików \texttt{mock.js} (pola, za co odpowiadają) + przykład}
 \label{sec:struktura-mockjs}
-\textit{[Treść niezmieniona – pozostaje w projekcie tak, jak była]}
+Pliki \texttt{.mock.js} odpowiadają za definiowanie odpowiedzi \emph{mockowanych} endpointów API. Każdy taki plik eksportuje zazwyczaj dwa obiekty:
+\begin{itemize}
+  \item \texttt{mockApi} -- zawiera definicje poszczególnych endpointów (np.~\texttt{branding}, \texttt{room}, \texttt{images}).
+  \item \texttt{mockApiPresets} -- grupuje definicje w postaci zestawów, np.~\texttt{default}, \texttt{booking}, \texttt{error}.
+\end{itemize}
 
-\subsection{Skrypty w \texttt{package.json}}
+\noindent Kluczowe pola w każdej definicji endpointu to:
+\begin{itemize}
+  \item \texttt{endpoint} -- ścieżka w API, np.~\texttt{'room/'}.
+  \item \texttt{query} -- dodatkowe parametry zapytania (\texttt{'?page=1'}).  
+  \item \texttt{data} -- treść, jaka zostanie zwrócona (obiekt JSON, tekst HTML, bufor obrazu).
+  \item \texttt{contentType} -- typ \emph{Content-Type} odpowiedzi (\texttt{'application/json'}, \texttt{'image/jpeg'}, \texttt{'text/html'}).
+  \item \texttt{apiUrl} (opcjonalne) -- jeśli \texttt{mock} ma wskazywać na inny adres bazowy niż domyślny.
+\end{itemize}
+
+\noindent Przykładowy plik \texttt{simple.mock.js}:
+
+\begin{verbatim}
+export const mockApi = {
+  branding: {
+    default: {
+      endpoint: 'branding/',
+      query: '',
+      data: {
+        name: 'Hotel Testowy',
+        description: 'Najlepszy hotel w okolicy',
+      },
+      contentType: 'application/json'
+    }
+  },
+  images: {
+    logo: {
+      endpoint: 'images/logo.png',
+      query: '',
+      data: Buffer.from([0x89, 0x50, 0x4e, 0x47]), // przykładowy bajt
+      contentType: 'image/png'
+    }
+  }
+};
+
+export const mockApiPresets = {
+  default: [
+    mockApi.branding.default,
+    mockApi.images.logo
+  ]
+};
+\end{verbatim}
+
+Dzięki \texttt{mockApiPresets.default} w testach można wczytać oba endpointy jednocześnie, co pozwala symulować środowisko bez konieczności korzystania z prawdziwej infrastruktury.
+
+
+\subsection{Skrypty w \texttt{package.json}} % -- 5.2.3 ZMIENIONE
 \label{sec:skrypty-package}
-\textit{[Treść niezmieniona – pozostaje w projekcie tak, jak była]}
 
-\subsection{\texttt{testManager}}
+W pliku \texttt{package.json} zdefiniowano skrypty, które ułatwiają uruchamianie testów oraz zarządzanie projektem. Poniżej przedstawiono zawartość sekcji \texttt{"scripts"} wraz z krótkim omówieniem:
+
+\begin{verbatim}
+{
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:docker": "docker-compose -f docker-compose.playwright.yml run --rm console",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:ui:docker": "docker-compose -f docker-compose.playwright.yml run --rm ui-mode",
+    "manager": "node testManager.js",
+    "test:mock": "node mockTest.js"
+  }
+}
+\end{verbatim}
+
+\begin{itemize}
+    \item \texttt{"test:e2e"} -- uruchamia testy end-to-end za pomocą Playwright w trybie konsolowym.  
+    \item \texttt{"test:e2e:docker"} -- podobne uruchomienie testów E2E, lecz w kontenerze (zdefiniowanym w \texttt{docker-compose.playwright.yml}) i z poleceniem \texttt{console}.
+    \item \texttt{"test:e2e:ui"} -- wywołuje testy Playwright w trybie interfejsu graficznego (\texttt{--ui}), umożliwiając przeglądanie wyników testów w czasie rzeczywistym.
+    \item \texttt{"test:e2e:ui:docker"} -- analogicznie jak wyżej, ale uruchamia się w środowisku Docker.
+    \item \texttt{"manager"} -- wywołuje główne narzędzie CLI, czyli \texttt{testManager.js}, służące do interaktywnego zarządzania plikami \texttt{.spec.js} i wariantami testów.
+    \item \texttt{"test:mock"} -- uruchamia \texttt{mockTest.js}, który weryfikuje poprawność \texttt{mockApi} w porównaniu do realnego API.
+\end{itemize}
+
+Dzięki tym skryptom można sprawnie kontrolować różne typy testów (E2E w kontenerze czy lokalnie, testy mocków) oraz korzystać z \texttt{testManager} bez konieczności ręcznego wpisywania dłuższych poleceń.
+
+
+\subsection{\texttt{testManager}} % -- 5.2.4 ZMIENIONE
 \label{sec:testManager}
-\textit{[Treść niezmieniona – pozostaje w projekcie tak, jak była]}
+
+Moduł \texttt{testManager} pełni rolę interfejsu CLI do zarządzania plikami testowymi (\texttt{.spec.js}) i ich wariantami. Pozwala m.in.:
+\begin{itemize}
+    \item Wybierać plik \texttt{.spec.js} z dostępnej listy,
+    \item Odczytywać i modyfikować warianty testów w danym pliku,
+    \item Dodawać lub usuwać interakcje użytkownika (\texttt{pageInteraction}),
+    \item Uruchamiać \emph{Playwright codegen} w celu półautomatycznego wygenerowania nowych interakcji.
+\end{itemize}
+
+Poniżej pokazano przykładowe ekrany z działania \texttt{testManager}:
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.93\textwidth]{tm_main_menu.png}
+\caption{Główne menu \texttt{testManager} po uruchomieniu: użytkownik wybiera plik \texttt{.spec.js} lub opcję \textit{Exit}.}
+\label{fig:tm_main_menu}
+\end{figure}
+
+Po wybraniu konkretnego pliku \texttt{.spec.js}, \texttt{testManager} wyświetla dostępne warianty testów:
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.93\textwidth]{tm_variant_selection_menu.png}
+\caption{Menu wyboru wariantu w \texttt{testManager}. Można też wrócić do wyboru pliku \texttt{.spec.js}.}
+\label{fig:tm_variant_selection_menu}
+\end{figure}
+
+Dla wybranego wariantu \texttt{testManager} prezentuje bieżącą konfigurację (widok, interakcje, wymiary itp.) w formie tabeli:
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.93\textwidth]{tm_variant_details_menu.png}
+\caption{Przykładowa tabelaryczna prezentacja stanu wariantu w \texttt{testManager}.}
+\label{fig:tm_variant_details_menu}
+\end{figure}
+
+Następnie użytkownik może skorzystać z opcji:
+\begin{itemize}
+   \item \textbf{Generate new code via codegen + override \texttt{setPageInteraction}}:  
+   wywołuje wewnętrznie \emph{Playwright codegen}, który otwiera przeglądarkę i rejestruje nowe czynności wykonywane przez testera. Po zakończeniu nagrywania \texttt{testManager} wstawia wygenerowany kod do \texttt{.spec.js}, zastępując dotychczasowy.
+   \item \textbf{Remove \texttt{setPageInteraction}}:  
+   usuwa z pliku \texttt{.spec.js} definicję akcji użytkownika dla bieżącego wariantu.
+   \item \textbf{Back to variant selection / Exit}:  
+   pozwala wrócić do poprzedniego kroku lub wyjść z narzędzia.
+\end{itemize}
+
+Rys.~\ref{fig:tm_code_generation} ilustruje moment, w którym \texttt{testManager} uruchamia przeglądarkę i \emph{Playwright codegen}, a użytkownik może „nagrać” nową sekwencję interakcji.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{tm_code_generation.png}
+\caption{Przykład równoczesnego działania CLI \texttt{testManager} i \emph{Playwright codegen} (przeglądarka).}
+\label{fig:tm_code_generation}
+\end{figure}
+
+\noindent Podsumowując, \texttt{testManager} upraszcza proces edycji i tworzenia testów:
+\begin{enumerate}
+   \item Interaktywnie prowadzi użytkownika przez wybór plików \texttt{.spec.js} i wariantów,
+   \item Umożliwia szybkie przełączanie się między wariantami testów (bez konieczności ręcznego grzebania w kodzie),
+   \item Zapewnia integrację z \emph{Playwright codegen}, dzięki czemu można łatwo „nagrać” nowe czynności na stronie i dołączyć je do testu,
+   \item Pozwala na podgląd aktualnej konfiguracji (rozmiary ekranu, tryby kolorystyczne, akcje \texttt{pageInteraction} itp.) w czytelnej tabeli.
+\end{enumerate}
+
+Dzięki temu programiści oraz testerzy mogą w prosty sposób zarządzać dużą liczbą testów wizualnych (screen testów) i błyskawicznie wprowadzać zmiany w interakcjach wykonywanych przez test.
+
 
 \chapter{Kluczowe mechanizmy i biblioteki}
 
