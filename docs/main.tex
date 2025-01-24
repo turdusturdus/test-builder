@@ -955,10 +955,196 @@ Funkcja \verb|codegenAndExtract| (z pliku \verb|codegen.js|) stanowi interfejs d
 Dzięki temu podejściu można \emph{nagrywać} kroki wykonywane na stronie, a następnie z poziomu narzędzia CLI \texttt{testManager} wstrzykiwać ten kod (interakcje) \emph{bezpośrednio} do plików \verb|.spec.js|, co przyspiesza i upraszcza proces tworzenia testów end-to-end.
 
 \chapter{Przykłady użyć aplikacji}
-{W tym rozdziale możesz zaprezentować, jak Twoje narzędzie działa w praktyce.}
+\label{chap:przyklady-uzyc}
+
+W niniejszym rozdziale zaprezentowano, w jaki sposób można wykorzystać opisywane narzędzie w praktyce na przykładzie prostej aplikacji webowej. Przedstawiono rzeczywiste zrzuty ekranu z uruchomień testów w konsoli, raportów błędów w \emph{Playwright}, a także proces walidacji plików \texttt{.mock.js} w odniesieniu do prawdziwego API. Dodatkowo ukazano przykładowy \emph{screenshot} strony testowej (\texttt{home-desktop-light-booking-chromium.png}) oraz fragmenty kodu testów (\texttt{home.spec.js}, \texttt{home.mock.js}).
 
 \section{Uruchamianie narzędzia w trybie interaktywnym}
-{Pokaż krok po kroku, jak użytkownik wypełnia formularz czy wybiera opcje w CLI, aby wygenerować testy. Zademonstruj końcowe pliki testowe.}
+\label{sec:uruchamianie-narzedzia}
+
+W typowym scenariuszu deweloper uruchamia testy za pomocą komendy:
+
+\begin{center}
+\texttt{npm run test:e2e}
+\end{center}
+
+co powoduje wywołanie testów w trybie konsolowym (Playwright). W przypadku chęci skorzystania z \emph{UI} \emph{Playwright} (interfejs graficzny testów) używana jest komenda:
+
+\begin{center}
+\texttt{npm run test:e2e:ui}
+\end{center}
+
+W dalszej części pokazano przykłady logów i raportów z takich uruchomień:
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.80\textwidth]{e2e_console_test_log.png}
+\caption{Fragment logu uruchomienia testów E2E w trybie konsolowym. Widoczne są m.in.\ błędy nieudanego testu zrzutu ekranu (16 testów niepowodzeń i 4 zakończone sukcesem).}
+\label{fig:e2e-console-test-log}
+\end{figure}
+
+Na rysunku \ref{fig:e2e-console-test-log} widzimy przykładowy log z linii poleceń, gdzie \emph{Playwright} raportuje niezgodności względem oczekiwanego zrzutu ekranu (\texttt{toHaveScreenshot}). Przyczyny błędów mogą wynikać np.\ ze zmian w układzie strony lub dodania nowych elementów, co sprawia, że generowany obraz różni się od wzorca.
+
+\subsection*{Raport nieudanego testu wizualnego}
+Po zakończeniu testów w trybie \emph{UI} bądź w trybie \emph{console} (\emph{headless}), możliwe jest obejrzenie raportów w formacie HTML. Rysunek \ref{fig:e2e-report-web-test-log} ilustruje fragment takiego raportu, w którym \emph{Playwright} wskazuje różnice między oczekiwanym a aktualnym zrzutem ekranu.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.90\textwidth]{e2e_report_web_test_log.png}
+\caption{Raport \emph{Playwright} w przeglądarce – przykładowy błąd spowodowany różnicą w rozmiarach zrzutu ekranu.}
+\label{fig:e2e-report-web-test-log}
+\end{figure}
+
+Z raportu (rys. \ref{fig:e2e-report-web-test-log}) wynika m.in.\ że oczekiwano obrazu o wymiarach \texttt{1396px x 3367px}, lecz w trakcie testu uzyskano \texttt{1396px x 2868px}. Tego typu różnica może wystąpić w sytuacji, gdy nie załadowała się dana sekcja strony albo zmieniono styl CSS powodujący inny rozmiar.
+
+\subsection*{Przykładowy \emph{screenshot} testowanej aplikacji}
+
+Poniżej zamieszczono przykładowy zrzut ekranu testowanej aplikacji (\texttt{home-desktop-light-booking-chromium.png}). Ten plik jest generowany w folderze \texttt{tests/home/} podczas uruchamiania testów \texttt{home.spec.js}. Zgodnie z konwencją nazewniczą:
+\[
+ \texttt{home-desktop-light-booking-chromium.png}
+\]
+oznacza, że jest to widok \texttt{home} w trybie \emph{desktop}, \emph{light} i wariancie \emph{booking}, uruchomionym w przeglądarce \emph{chromium}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.36\textwidth]{home-desktop-light-booking-chromium.png}
+\caption{Przykładowy screenshot aplikacji \texttt{home} (desktop, jasny motyw, wariant \emph{booking}).}
+\label{fig:home-desktop-light-booking}
+\end{figure}
+
+\subsection*{Testy \texttt{mockApi} – przykłady sukcesu i błędu}
+
+Poza samymi testami \emph{E2E} ważną częścią narzędzia jest weryfikacja plików \texttt{.mock.js} względem rzeczywistego API (komenda \texttt{npm run test:mock}). Rysunek \ref{fig:mock-test-sucess-log} przedstawia przykład poprawnych testów \texttt{mock}, a rysunek \ref{fig:mock-test-failure-log} pokazuje sytuację, gdy \texttt{mockApi} nie jest zgodne z aktualnym schematem serwera.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.80\textwidth]{mock_test_succes_log.png}
+\caption{Przykład udanego uruchomienia testów \texttt{mockTest.js}, w którym zweryfikowano poprawność 2 plików \texttt{.mock.js}.}
+\label{fig:mock-test-sucess-log}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.80\textwidth]{mock_failure_test_log.png}
+\caption{Przykład błędu w \texttt{mockTest.js} – struktura zwracanego \texttt{branding/} nie zgadza się z oczekiwaną (pole \texttt{latitude} nie jest typu \texttt{number/null}).}
+\label{fig:mock-test-failure-log}
+\end{figure}
+
+Jak widać, dzięki \emph{mockTest} można w porę wykryć nieaktualne \texttt{mocki}, które mogłyby wprowadzać w błąd testy \emph{E2E}.
+
+\subsection{Przykładowy kod \texttt{home.spec.js}}
+\label{sec:home-spec-code}
+
+Poniżej zamieszczono przykładowy plik testowy \texttt{home.spec.js}, w którym zdefiniowano trzy warianty testu (\emph{main}, \emph{booking}, \emph{newInteraction}). W każdym z nich można ustawić nieco inne interakcje (\texttt{setPageInteraction}) wykonywane przed zrobieniem zrzutu ekranu.
+
+\begin{verbatim}
+====== tests/home/home.spec.js ======
+//@ts-check
+import ScreenshotTest from '../../screenshotTestBuilder.js';
+
+new ScreenshotTest()
+  .forPage('/', 'home')
+  .only()
+  .test()
+  .setPageInteraction(async (page) => {
+    await page.getByRole('button', { name: 'Book this room' }).click();
+  })
+  .test('booking')
+  .test('anotherVariant')
+  .setPageInteraction(async (page) => {
+    await page.getByTestId('ContactName').fill('hihihi');
+  })
+  .test('newInteraction');
+\end{verbatim}
+
+\noindent
+Każdorazowe wywołanie metody \texttt{test('nazwa')} generuje serię testów wizualnych w różnych kombinacjach rozdzielczości i wariantów (definiowanych w \texttt{screenshotTestBuilder}). W efekcie otrzymujemy m.in.\ zrzuty ekranu w \emph{desktop/mobile}, trybie \emph{light/dark} oraz – opcjonalnie – w różnych przeglądarkach (\emph{chromium}, \emph{firefox}, \emph{webkit}).
+
+\subsection{Przykładowy kod \texttt{home.mock.js}}
+\label{sec:home-mock-code}
+
+Poniżej pokazano część pliku \texttt{home.mock.js}, odpowiedzialnego za symulowanie odpowiedzi punktu \texttt{/branding/} oraz \texttt{/room/}. Zawiera on również definicję dwóch plików graficznych (bufor obrazu \texttt{room2.jpg} oraz \texttt{rbp-logo.jpg}), wczytywanych za pomocą \texttt{fs.readFileSync}.
+
+\begin{verbatim}
+====== mock-api/home/home.mock.js ======
+import fs from 'fs';
+
+const roomImage = fs.readFileSync(new URL('./room2.jpg', import.meta.url));
+const rbpLogo = fs.readFileSync(new URL('./rbp-logo.jpg', import.meta.url));
+
+const mockApi = {
+  branding: {
+    default: {
+      endpoint: 'branding/',
+      query: '',
+      data: {
+        name: 'Shady Meadows B&B',
+        map: {
+          latitude: 52.6351204,
+          longitude: 1.2733774,
+        },
+        logoUrl: '/images/rbp-logo.jpg',
+        description:
+          'Welcome to Shady Meadows, a delightful Bed & Breakfast nestled ...',
+        contact: {
+          name: 'Shady Meadows B&B',
+          address: 'The Old Farmhouse, Shady Street, Newfordburyshire, NE1 410S',
+          phone: '012345678901',
+          email: 'fake@fakeemail.com',
+        },
+      },
+    },
+  },
+  room: {
+    default: {
+      endpoint: 'room/',
+      query: '',
+      data: {
+        rooms: [
+          {
+            roomid: 1,
+            roomName: '101',
+            type: 'single',
+            accessible: true,
+            image: '/images/room2.jpg',
+            description:
+              'Aenean porttitor mauris sit amet lacinia molestie...',
+            features: ['TV', 'WiFi', 'Safe'],
+            roomPrice: 100,
+          },
+        ],
+      },
+    },
+  },
+  images: {
+    room: {
+      endpoint: 'images/room2.jpg',
+      query: '',
+      contentType: 'image/jpeg',
+      data: roomImage,
+    },
+    logo: {
+      endpoint: 'images/rbp-logo.jpg',
+      query: '',
+      contentType: 'image/jpeg',
+      data: rbpLogo,
+    },
+  },
+};
+
+const mockApiPresets = {
+  default: [
+    mockApi['branding'].default,
+    mockApi['room'].default,
+    mockApi['images'].room,
+  ],
+};
+
+export { mockApi, mockApiPresets };
+\end{verbatim}
+
+\noindent
+Widzimy, że plik \texttt{home.mock.js} eksportuje \texttt{mockApiPresets.default}, dzięki czemu w \texttt{screenshotTestBuilder} można jednocześnie podmienić kilka endpointów (\texttt{/branding/}, \texttt{/room/}, \texttt{/images/room2.jpg}) w trakcie testu E2E, bez potrzeby odwoływania się do prawdziwej bazy danych czy usług backendowych.
 
 \section{Integracja z procesem CI/CD}
 {Wyjaśnij, jak można włączyć wygenerowane testy do automatycznego pipeline’u, np. w GitLab CI, Jenkinsie, itp. Przedstaw przykładowy fragment konfiguracji.}
